@@ -107,8 +107,12 @@ def get_today_homework(request):
             
             # 如果今天是周五、六、日，计算下周一的日期
             next_monday = None
-            if today_weekday >= 4:  # 周五
+            if today_weekday == 4:  # 周五
                 next_monday = today + datetime.timedelta(days=3)  # 加3天得到下周一
+            elif today_weekday == 5:  # 周六
+                next_monday = today + datetime.timedelta(days=2)  # 加2天得到下周一
+            elif today_weekday == 6:  # 周日
+                next_monday = today + datetime.timedelta(days=1)  # 加1天得到下周一
             
             # 获取学生的所有作业（通过完成记录关联），且是今天需要做的作业（开始日期<=今天，且截止日期>今天）
             student_completion_records = CompletionRecord.objects.filter(
@@ -138,7 +142,7 @@ def get_today_homework(request):
                 # 添加特殊标记
                 special_mark = ""
                 if next_monday:
-                    if assignment.end_date != next_monday:
+                    if assignment.end_date > next_monday:
                         special_mark = "周一不收"
                 elif assignment.end_date != tomorrow:
                     special_mark = "明不收"

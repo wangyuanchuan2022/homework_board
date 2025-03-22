@@ -1,7 +1,7 @@
 import requests
 import json
 
-url = "http://117.72.52.190:8000/api/get_today_homework/"
+url = "http://127.0.0.1:8000/api/get_today_homework/"
 data = {
     "username": "yf105",
     "password": "rdfzrdfz"
