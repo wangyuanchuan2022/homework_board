@@ -1,0 +1,432 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}热搜榜{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hot-topic-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+        position: relative;
+    }
+    
+    .hot-topic-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .hot-topic-card.pinned {
+        border-left-color: #dc3545;
+    }
+    
+    .topic-number {
+        font-size: 1.2rem;
+        font-weight: bold;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .topic-number.top1 {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .topic-number.top2 {
+        background-color: #fd7e14;
+        color: white;
+    }
+    
+    .topic-number.top3 {
+        background-color: #ffc107;
+        color: white;
+    }
+    
+    .like-btn {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .like-btn:hover {
+        transform: scale(1.1);
+    }
+    
+    .like-btn.liked {
+        color: #dc3545;
+    }
+    
+    .heat-badge {
+        background-color: rgba(255, 193, 7, 0.2);
+        color: #fd7e14;
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 0.75rem;
+    }
+    
+    .actions-dropdown {
+        position: static;
+    }
+    
+    .actions-dropdown .dropdown-menu {
+        position: absolute;
+        z-index: 1050;
+        min-width: 10rem;
+        right: 0.5rem !important;
+        left: auto !important;
+        transform: none !important;
+    }
+    
+    .actions-dropdown .dropdown-item {
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        white-space: nowrap;
+    }
+    
+    .actions-dropdown .btn {
+        padding: 0.25rem 0.5rem;
+        background: transparent;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0"><i class="bi bi-fire text-danger me-2"></i>十班热搜</h2>
+                <a href="{% url 'dashboard' %}" class="btn btn-primary">
+                    <i class="bi bi-arrow-left me-1"></i>返回仪表盘
+                </a>
+            </div>
+            <p class="text-muted">实时热搜，看看大家都在讨论什么</p>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-8 col-lg-7 col-xl-6 mx-auto">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-white">发布热搜</h5>
+                </div>
+                <div class="card-body">
+                    <form id="createTopicForm">
+                        <div class="mb-3">
+                            <label for="topicTitle" class="form-label">标题</label>
+                            <input type="text" class="form-control" id="topicTitle" name="title" required maxlength="200" placeholder="输入热搜标题">
+                        </div>
+                        <div class="mb-3">
+                            <label for="topicContent" class="form-label">内容 (可选)</label>
+                            <textarea class="form-control" id="topicContent" name="content" rows="3" placeholder="输入热搜详细内容"></textarea>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-plus-circle me-1"></i>发布热搜
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8 col-lg-7 col-xl-6 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0 text-white">十班热搜 TOP 10</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% if top_topics %}
+                            {% for topic, heat_score in top_topics %}
+                                <div class="list-group-item hot-topic-card {% if topic.is_pinned %}pinned{% endif %} p-3" data-id="{{ topic.id }}">
+                                    <div class="d-flex">
+                                        <div class="topic-number {% if forloop.counter == 1 %}top1{% elif forloop.counter == 2 %}top2{% elif forloop.counter == 3 %}top3{% endif %} me-3">
+                                            {{ forloop.counter }}
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <h5 class="mb-0">
+                                                    {% if topic.is_pinned %}
+                                                        <span class="badge bg-danger me-1">置顶</span>
+                                                    {% endif %}
+                                                    {{ topic.title }}
+                                                </h5>
+                                                {% if request.user == topic.author or request.user.user_type == 'admin' %}
+                                                <div class="dropdown actions-dropdown">
+                                                    <button class="btn btn-sm btn-link text-muted" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <i class="bi bi-three-dots-vertical"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                        {% if request.user == topic.author or request.user.user_type == 'admin' %}
+                                                            <li>
+                                                                <a class="dropdown-item delete-topic" href="javascript:void(0);" data-id="{{ topic.id }}">
+                                                                    <i class="bi bi-trash me-2 text-danger"></i>删除
+                                                                </a>
+                                                            </li>
+                                                        {% endif %}
+                                                        {% if request.user.user_type == 'admin' %}
+                                                            <li>
+                                                                <a class="dropdown-item pin-topic" href="javascript:void(0);" data-id="{{ topic.id }}" data-pinned="{{ topic.is_pinned|yesno:'true,false' }}">
+                                                                    <i class="bi bi-pin-angle me-2 {% if topic.is_pinned %}text-danger{% endif %}"></i>
+                                                                    {% if topic.is_pinned %}取消置顶{% else %}置顶{% endif %}
+                                                                </a>
+                                                            </li>
+                                                        {% endif %}
+                                                    </ul>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            {% if topic.content %}
+                                                <p class="mb-2">{{ topic.content }}</p>
+                                            {% endif %}
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="d-flex align-items-center">
+                                                    <small class="text-muted me-3">{{ topic.author.username }} · {{ topic.created_at|date:"Y-m-d H:i" }}</small>
+                                                    <small class="heat-badge">
+                                                        <i class="bi bi-graph-up me-1"></i>热度 {{ heat_score|floatformat:1 }}
+                                                    </small>
+                                                </div>
+                                                <div class="like-btn {% if topic.id in user_liked_topics %}liked{% endif %}" data-id="{{ topic.id }}">
+                                                    <i class="bi {% if topic.id in user_liked_topics %}bi-heart-fill{% else %}bi-heart{% endif %} me-1"></i>
+                                                    <span class="likes-count">{{ topic.likes_count }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="list-group-item p-4 text-center">
+                                <p class="mb-0">暂无热搜，赶快发布第一条吧!</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 弹窗提示 -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="toast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">提示</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 创建热搜表单提交
+        const createTopicForm = document.getElementById('createTopicForm');
+        if (createTopicForm) {
+            createTopicForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const title = document.getElementById('topicTitle').value.trim();
+                const content = document.getElementById('topicContent').value.trim();
+                
+                if (!title) {
+                    showToast('标题不能为空');
+                    return;
+                }
+                
+                // 发送创建请求
+                fetch('{% url "create_hot_topic" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: new URLSearchParams({
+                        'title': title,
+                        'content': content
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 清空表单
+                        createTopicForm.reset();
+                        showToast('热搜发布成功!');
+                        // 刷新页面以显示新热搜
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        showToast(data.message || '发布失败，请重试');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('发生错误，请重试');
+                });
+            });
+        }
+        
+        // 点赞按钮事件
+        const likeButtons = document.querySelectorAll('.like-btn');
+        likeButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const topicId = this.getAttribute('data-id');
+                
+                // 发送点赞请求
+                fetch('{% url "toggle_hot_topic_like" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: new URLSearchParams({
+                        'topic_id': topicId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 更新点赞状态和数量
+                        const likeIcon = this.querySelector('i');
+                        const likesCount = this.querySelector('.likes-count');
+                        
+                        if (data.action === 'liked') {
+                            likeIcon.classList.remove('bi-heart');
+                            likeIcon.classList.add('bi-heart-fill');
+                            this.classList.add('liked');
+                        } else {
+                            likeIcon.classList.remove('bi-heart-fill');
+                            likeIcon.classList.add('bi-heart');
+                            this.classList.remove('liked');
+                        }
+                        
+                        likesCount.textContent = data.likes_count;
+                        showToast(data.message);
+                    } else {
+                        showToast(data.message || '操作失败，请重试');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('发生错误，请重试');
+                });
+            });
+        });
+        
+        // 删除热搜
+        const deleteButtons = document.querySelectorAll('.delete-topic');
+        deleteButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (confirm('确定要删除这条热搜吗？')) {
+                    const topicId = this.getAttribute('data-id');
+                    
+                    // 发送删除请求
+                    fetch('{% url "delete_hot_topic" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: new URLSearchParams({
+                            'topic_id': topicId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast('热搜已删除');
+                            // 移除DOM元素
+                            const topicCard = document.querySelector(`.hot-topic-card[data-id="${topicId}"]`);
+                            if (topicCard) {
+                                topicCard.remove();
+                            }
+                        } else {
+                            showToast(data.message || '删除失败，请重试');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showToast('发生错误，请重试');
+                    });
+                }
+            });
+        });
+        
+        // 置顶/取消置顶热搜
+        const pinButtons = document.querySelectorAll('.pin-topic');
+        pinButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const topicId = this.getAttribute('data-id');
+                const isPinned = this.getAttribute('data-pinned') === 'true';
+                const action = isPinned ? '取消置顶' : '置顶';
+                
+                if (confirm(`确定要${action}这条热搜吗？`)) {
+                    // 发送置顶请求
+                    fetch('{% url "pin_hot_topic" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: new URLSearchParams({
+                            'topic_id': topicId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast(data.message);
+                            // 刷新页面以更新排序
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
+                        } else {
+                            showToast(data.message || '操作失败，请重试');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showToast('发生错误，请重试');
+                    });
+                }
+            });
+        });
+        
+        // 显示弹窗提示
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastBody = toast.querySelector('.toast-body');
+            toastBody.textContent = message;
+            
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+        }
+        
+        // 获取CSRF Token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
+{% endblock %} 

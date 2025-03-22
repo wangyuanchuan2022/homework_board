@@ -1,0 +1,1138 @@
+{% extends 'base.html' %}
+
+{% block title %}管理员仪表盘{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <div class="container py-4">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card dashboard-overview-card">
+                    <div class="card-header">
+                        <h5 class="mb-0 card-title">系统概览</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="stats-card student-stats">
+                                    <div class="stats-icon">
+                                        <i class="bi bi-person-fill"></i>
+                                    </div>
+                                    <div class="stats-info">
+                                        <h5 class="stats-title">学生账号</h5>
+                                        <p class="stats-value">{{ total_students }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stats-card teacher-stats">
+                                    <div class="stats-icon">
+                                        <i class="bi bi-person-badge-fill"></i>
+                                    </div>
+                                    <div class="stats-info">
+                                        <h5 class="stats-title">教师账号</h5>
+                                        <p class="stats-value">{{ total_teachers }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stats-card assignment-stats">
+                                    <div class="stats-icon">
+                                        <i class="bi bi-journal-check"></i>
+                                    </div>
+                                    <div class="stats-info">
+                                        <h5 class="stats-title">作业总数</h5>
+                                        <p class="stats-value">{{ total_assignments }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <a href="{% url 'hot_topics' %}" class="btn btn-danger btn-lg">
+                                <i class="bi bi-fire me-2"></i> 热搜管理
+                            </a>
+                            <p class="text-muted mt-2">查看和管理学生热搜，可置顶或删除热搜</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card admin-card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 card-title">用户管理</h5>
+                        <button class="btn btn-primary btn-sm btn-icon" data-bs-toggle="modal" data-bs-target="#createUserModal">
+                            <i class="bi bi-plus-circle me-1"></i> 创建账号
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <ul class="nav nav-tabs custom-tabs mb-4" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab">
+                                    <i class="bi bi-mortarboard me-1"></i> 学生
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="teachers-tab" data-bs-toggle="tab" data-bs-target="#teachers" type="button" role="tab">
+                                    <i class="bi bi-person-workspace me-1"></i> 教师
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="admins-tab" data-bs-toggle="tab" data-bs-target="#admins" type="button" role="tab">
+                                    <i class="bi bi-shield-lock me-1"></i> 管理员
+                                </button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="students" role="tabpanel">
+                                <div class="table-responsive">
+                                    <table class="table table-hover custom-table">
+                                        <thead>
+                                            <tr>
+                                                <th>用户名</th>
+                                                <th>注册时间</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for student in students %}
+                                            <tr>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="avatar avatar-sm bg-light me-2">
+                                                            <i class="bi bi-person"></i>
+                                                        </div>
+                                                        <div>
+                                                            {{ student.username }}
+                                                            {% if student.student_id %}
+                                                            <small class="text-muted d-block">(学号: {{ student.student_id }})</small>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>{{ student.date_joined|date:"Y-m-d H:i" }}</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-danger btn-icon delete-user" data-id="{{ student.id }}">
+                                                        <i class="bi bi-trash me-1"></i> 删除
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="3" class="text-center empty-data">
+                                                    <div class="empty-icon-container mb-2">
+                                                        <i class="bi bi-person-slash"></i>
+                                                    </div>
+                                                    <p>暂无学生账号</p>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- 学生分页控件 -->
+                                {% if students.has_other_pages %}
+                                <div class="pagination-container mt-3">
+                                    <nav aria-label="学生列表分页">
+                                        <ul class="pagination justify-content-center">
+                                            {% if students.has_previous %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?students_page={{ students.previous_page_number }}&teachers_page={{ teachers.number }}&admins_page={{ admins.number }}&assignments_page={{ assignments.number }}" aria-label="上一页">
+                                                    <span aria-hidden="true">&laquo;</span>
+                                                </a>
+                                            </li>
+                                            {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link" aria-hidden="true">&laquo;</span>
+                                            </li>
+                                            {% endif %}
+                                            
+                                            {% for i in students.paginator.page_range %}
+                                                {% if students.number == i %}
+                                                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                                                {% else %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?students_page={{ i }}&teachers_page={{ teachers.number }}&admins_page={{ admins.number }}&assignments_page={{ assignments.number }}">{{ i }}</a>
+                                                </li>
+                                                {% endif %}
+                                            {% endfor %}
+                                            
+                                            {% if students.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?students_page={{ students.next_page_number }}&teachers_page={{ teachers.number }}&admins_page={{ admins.number }}&assignments_page={{ assignments.number }}" aria-label="下一页">
+                                                    <span aria-hidden="true">&raquo;</span>
+                                                </a>
+                                            </li>
+                                            {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link" aria-hidden="true">&raquo;</span>
+                                            </li>
+                                            {% endif %}
+                                        </ul>
+                                    </nav>
+                                    <div class="text-center text-muted small">
+                                        显示第 {{ students.start_index }} 至 {{ students.end_index }} 条，共 {{ total_students }} 条记录
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="tab-pane fade" id="teachers" role="tabpanel">
+                                <div class="table-responsive">
+                                    <table class="table table-hover custom-table">
+                                        <thead>
+                                            <tr>
+                                                <th>用户名</th>
+                                                <th>注册时间</th>
+                                                <th>作业数量</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for teacher in teachers %}
+                                            <tr>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="avatar avatar-sm bg-light me-2">
+                                                            <i class="bi bi-person-workspace"></i>
+                                                        </div>
+                                                        <div>{{ teacher.username }}</div>
+                                                    </div>
+                                                </td>
+                                                <td>{{ teacher.date_joined|date:"Y-m-d H:i" }}</td>
+                                                <td><span class="badge assignment-count">{{ teacher.assignments.count }}</span></td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-danger btn-icon delete-user" data-id="{{ teacher.id }}">
+                                                        <i class="bi bi-trash me-1"></i> 删除
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="4" class="text-center empty-data">
+                                                    <div class="empty-icon-container mb-2">
+                                                        <i class="bi bi-person-slash"></i>
+                                                    </div>
+                                                    <p>暂无教师账号</p>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- 教师分页控件 -->
+                                {% if teachers.has_other_pages %}
+                                <div class="pagination-container mt-3">
+                                    <nav aria-label="教师列表分页">
+                                        <ul class="pagination justify-content-center">
+                                            {% if teachers.has_previous %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?students_page={{ students.number }}&teachers_page={{ teachers.previous_page_number }}&admins_page={{ admins.number }}&assignments_page={{ assignments.number }}" aria-label="上一页">
+                                                    <span aria-hidden="true">&laquo;</span>
+                                                </a>
+                                            </li>
+                                            {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link" aria-hidden="true">&laquo;</span>
+                                            </li>
+                                            {% endif %}
+                                            
+                                            {% for i in teachers.paginator.page_range %}
+                                                {% if teachers.number == i %}
+                                                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                                                {% else %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?students_page={{ students.number }}&teachers_page={{ i }}&admins_page={{ admins.number }}&assignments_page={{ assignments.number }}">{{ i }}</a>
+                                                </li>
+                                                {% endif %}
+                                            {% endfor %}
+                                            
+                                            {% if teachers.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?students_page={{ students.number }}&teachers_page={{ teachers.next_page_number }}&admins_page={{ admins.number }}&assignments_page={{ assignments.number }}" aria-label="下一页">
+                                                    <span aria-hidden="true">&raquo;</span>
+                                                </a>
+                                            </li>
+                                            {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link" aria-hidden="true">&raquo;</span>
+                                            </li>
+                                            {% endif %}
+                                        </ul>
+                                    </nav>
+                                    <div class="text-center text-muted small">
+                                        显示第 {{ teachers.start_index }} 至 {{ teachers.end_index }} 条，共 {{ total_teachers }} 条记录
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="tab-pane fade" id="admins" role="tabpanel">
+                                <div class="table-responsive">
+                                    <table class="table table-hover custom-table">
+                                        <thead>
+                                            <tr>
+                                                <th>用户名</th>
+                                                <th>注册时间</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for admin in admins %}
+                                            <tr>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="avatar avatar-sm bg-light me-2">
+                                                            <i class="bi bi-shield-lock"></i>
+                                                        </div>
+                                                        <div>{{ admin.username }}</div>
+                                                    </div>
+                                                </td>
+                                                <td>{{ admin.date_joined|date:"Y-m-d H:i" }}</td>
+                                                <td>
+                                                    {% if admins|length > 1 %}
+                                                    <button class="btn btn-sm btn-danger btn-icon delete-user" data-id="{{ admin.id }}">
+                                                        <i class="bi bi-trash me-1"></i> 删除
+                                                    </button>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="3" class="text-center empty-data">
+                                                    <div class="empty-icon-container mb-2">
+                                                        <i class="bi bi-person-slash"></i>
+                                                    </div>
+                                                    <p>暂无其他管理员账号</p>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- 管理员分页控件 -->
+                                {% if admins.has_other_pages %}
+                                <div class="pagination-container mt-3">
+                                    <nav aria-label="管理员列表分页">
+                                        <ul class="pagination justify-content-center">
+                                            {% if admins.has_previous %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?students_page={{ students.number }}&teachers_page={{ teachers.number }}&admins_page={{ admins.previous_page_number }}&assignments_page={{ assignments.number }}" aria-label="上一页">
+                                                    <span aria-hidden="true">&laquo;</span>
+                                                </a>
+                                            </li>
+                                            {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link" aria-hidden="true">&laquo;</span>
+                                            </li>
+                                            {% endif %}
+                                            
+                                            {% for i in admins.paginator.page_range %}
+                                                {% if admins.number == i %}
+                                                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                                                {% else %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?students_page={{ students.number }}&teachers_page={{ teachers.number }}&admins_page={{ i }}&assignments_page={{ assignments.number }}">{{ i }}</a>
+                                                </li>
+                                                {% endif %}
+                                            {% endfor %}
+                                            
+                                            {% if admins.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?students_page={{ students.number }}&teachers_page={{ teachers.number }}&admins_page={{ admins.next_page_number }}&assignments_page={{ assignments.number }}" aria-label="下一页">
+                                                    <span aria-hidden="true">&raquo;</span>
+                                                </a>
+                                            </li>
+                                            {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link" aria-hidden="true">&raquo;</span>
+                                            </li>
+                                            {% endif %}
+                                        </ul>
+                                    </nav>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card admin-card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 card-title">作业管理</h5>
+                        <button class="btn btn-warning btn-sm btn-icon" data-bs-toggle="modal" data-bs-target="#cleanupModal">
+                            <i class="bi bi-trash me-1"></i> 清理旧作业
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover custom-table">
+                                <thead>
+                                    <tr>
+                                        <th>标题</th>
+                                        <th>科目</th>
+                                        <th>教师</th>
+                                        <th>截止日期</th>
+                                        <th>完成比例</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for assignment in assignments %}
+                                    <tr>
+                                        <td>
+                                            <div class="text-truncate assignment-title" title="{{ assignment.title }}">
+                                                {{ assignment.title }}
+                                            </div>
+                                        </td>
+                                        <td><span class="badge subject-badge">{{ assignment.subject.name }}</span></td>
+                                        <td>{{ assignment.teacher.username }}</td>
+                                        <td>{{ assignment.end_date|date:"Y-m-d" }}</td>
+                                        <td>
+                                            {% if assignment.total_count > 0 %}
+                                            <div class="completion-wrapper">
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ assignment.completion_percentage }}%"></div>
+                                                </div>
+                                                <div class="completion-text">
+                                                    {{ assignment.completed_count }}/{{ assignment.total_count }}
+                                                    ({{ assignment.completion_percentage }}%)
+                                                </div>
+                                            </div>
+                                            {% else %}
+                                            <span class="badge no-data-badge">0/0 (0%)</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-2">
+                                                <a href="{% url 'assignment_detail' pk=assignment.id %}" class="btn btn-sm btn-primary btn-icon">
+                                                    <i class="bi bi-eye me-1"></i> 查看
+                                                </a>
+                                                <a href="{% url 'edit_assignment' pk=assignment.id %}" class="btn btn-sm btn-primary btn-icon">
+                                                    <i class="bi bi-pencil me-1"></i> 编辑
+                                                </a>
+                                                <button class="btn btn-sm btn-danger btn-icon delete-assignment" data-id="{{ assignment.id }}">
+                                                    <i class="bi bi-trash me-1"></i> 删除
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center empty-data">
+                                            <div class="empty-icon-container mb-2">
+                                                <i class="bi bi-journal-x"></i>
+                                            </div>
+                                            <p>暂无作业</p>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- 作业分页控件 -->
+                        {% if assignments.has_other_pages %}
+                        <div class="pagination-container mt-3">
+                            <nav aria-label="作业列表分页">
+                                <ul class="pagination justify-content-center">
+                                    {% if assignments.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?students_page={{ students.number }}&teachers_page={{ teachers.number }}&admins_page={{ admins.number }}&assignments_page={{ assignments.previous_page_number }}" aria-label="上一页">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link" aria-hidden="true">&laquo;</span>
+                                    </li>
+                                    {% endif %}
+                                    
+                                    {% for i in assignments.paginator.page_range %}
+                                        {% if assignments.number == i %}
+                                        <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                                        {% else %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?students_page={{ students.number }}&teachers_page={{ teachers.number }}&admins_page={{ admins.number }}&assignments_page={{ i }}">{{ i }}</a>
+                                        </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if assignments.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?students_page={{ students.number }}&teachers_page={{ teachers.number }}&admins_page={{ admins.number }}&assignments_page={{ assignments.next_page_number }}" aria-label="下一页">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link" aria-hidden="true">&raquo;</span>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                            <div class="text-center text-muted small">
+                                显示第 {{ assignments.start_index }} 至 {{ assignments.end_index }} 条，共 {{ total_assignments }} 条记录
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 创建用户模态框 -->
+<div class="modal fade" id="createUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content glass-modal">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>创建新账号</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createUserForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">用户名</label>
+                        <div class="input-group-glass">
+                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                            <input type="text" class="form-control" id="username" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">密码</label>
+                        <div class="input-group-glass">
+                            <span class="input-group-text"><i class="bi bi-key"></i></span>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="userType" class="form-label">账号类型</label>
+                        <div class="input-group-glass">
+                            <span class="input-group-text"><i class="bi bi-people"></i></span>
+                            <select class="form-select" id="userType" required>
+                                <option value="admin">管理员</option>
+                                <option value="teacher">教师</option>
+                                <option value="student">学生</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-icon" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i> 取消
+                </button>
+                <button type="button" class="btn btn-primary btn-icon" id="createUserBtn">
+                    <i class="bi bi-plus-circle me-1"></i> 创建
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 清理旧作业模态框 -->
+<div class="modal fade" id="cleanupModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content glass-modal">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-trash me-2"></i>清理旧作业</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning glass-alert">
+                    <div class="alert-icon">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <div class="alert-content">
+                        此操作将删除指定天数前创建的所有作业及其完成记录，此操作不可恢复！
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="cleanupDays" class="form-label">删除多少天前的作业？</label>
+                    <div class="input-group-glass">
+                        <span class="input-group-text"><i class="bi bi-calendar-x"></i></span>
+                        <input type="number" class="form-control" id="cleanupDays" value="90" min="1">
+                    </div>
+                    <div class="form-text"><i class="bi bi-info-circle me-1"></i>默认为90天（3个月）</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-icon" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i> 取消
+                </button>
+                <button type="button" class="btn btn-danger btn-icon" id="cleanupBtn">
+                    <i class="bi bi-trash me-1"></i> 确认清理
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-overview-card,
+    .admin-card {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        border: none;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+        transition: all var(--transition-speed) ease;
+    }
+    
+    .dashboard-overview-card:hover,
+    .admin-card:hover {
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .card-title {
+        font-weight: 600;
+        color: var(--secondary-color);
+    }
+    
+    .stats-card {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem;
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.7);
+        border: none;
+        box-shadow: var(--shadow-sm);
+        transition: all var(--transition-speed) cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .student-stats {
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .teacher-stats {
+        border-left: 4px solid var(--success-color);
+    }
+    
+    .assignment-stats {
+        border-left: 4px solid var(--info-color);
+    }
+    
+    .stats-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        font-size: 1.5rem;
+    }
+    
+    .student-stats .stats-icon {
+        color: var(--primary-color);
+        background-color: rgba(var(--primary-rgb), 0.1);
+    }
+    
+    .teacher-stats .stats-icon {
+        color: var(--success-color);
+        background-color: rgba(var(--success-rgb), 0.1);
+    }
+    
+    .assignment-stats .stats-icon {
+        color: var(--info-color);
+        background-color: rgba(var(--info-rgb), 0.1);
+    }
+    
+    .stats-info {
+        flex: 1;
+    }
+    
+    .stats-title {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.3rem;
+    }
+    
+    .stats-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0;
+        line-height: 1;
+    }
+    
+    .custom-tabs {
+        border-bottom: 2px solid rgba(0, 49, 82, 0.1);
+    }
+    
+    .custom-tabs .nav-link {
+        border: none;
+        color: var(--text-secondary);
+        position: relative;
+        padding: 0.75rem 1.5rem;
+        transition: all var(--transition-speed) ease;
+    }
+    
+    .custom-tabs .nav-link.active {
+        color: var(--primary-color);
+        background: transparent;
+        font-weight: 600;
+    }
+    
+    .custom-tabs .nav-link.active::after {
+        content: '';
+        bottom: -2px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        border-radius: 2px 2px 0 0;
+    }
+    
+    .custom-tabs .nav-link:hover:not(.active) {
+        background-color: rgba(0, 49, 82, 0.03);
+    }
+    
+    .custom-table {
+        border-collapse: separate;
+        border-spacing: 0 0.5rem;
+    }
+    
+    .custom-table thead th {
+        border: none;
+        background: rgba(0, 49, 82, 0.03);
+        padding: 0.75rem 1rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+    
+    .custom-table tbody tr {
+        background: rgba(255, 255, 255, 0.5);
+        box-shadow: var(--shadow-xs);
+        transition: all var(--transition-speed) ease;
+    }
+    
+    .custom-table tbody tr:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .custom-table td {
+        padding: 0.75rem 1rem;
+        border: none;
+        vertical-align: middle;
+    }
+    
+    .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+    }
+    
+    .avatar-sm {
+        width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
+    }
+    
+    .empty-data {
+        padding: 2rem !important;
+        color: var(--text-secondary);
+    }
+    
+    .empty-icon-container {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: rgba(0, 49, 82, 0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        font-size: 1.25rem;
+        color: var(--text-secondary);
+    }
+    
+    .assignment-title {
+        max-width: 150px;
+        overflow: hidden;
+    }
+    
+    .subject-badge {
+        background-color: var(--accent-color);
+        color: white;
+        font-weight: 500;
+        padding: 0.35rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+    }
+    
+    .assignment-count {
+        background-color: rgba(var(--success-rgb), 0.1);
+        color: var(--success-color);
+        font-weight: 500;
+        padding: 0.35rem 0.8rem;
+        border-radius: 10px;
+    }
+    
+    .completion-wrapper {
+        min-width: 100px;
+    }
+    
+    .progress {
+        background-color: rgba(0, 49, 82, 0.1);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 0.3rem;
+    }
+    
+    .progress-bar {
+        background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        transition: width 1s ease;
+    }
+    
+    .completion-text {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        text-align: right;
+    }
+    
+    .no-data-badge {
+        background-color: rgba(0, 49, 82, 0.05);
+        color: var(--text-secondary);
+        padding: 0.35rem 0.8rem;
+        border-radius: 10px;
+        font-size: 0.75rem;
+    }
+    
+    .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all var(--transition-speed) cubic-bezier(0.34, 1.56, 0.64, 1);
+        min-width: 100px;
+        min-height: 30px;
+    }
+    
+    .btn-icon:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .glass-modal {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        border: none;
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .glass-modal .modal-header,
+    .glass-modal .modal-footer {
+        border-color: rgba(0, 49, 82, 0.05);
+    }
+    
+    .glass-alert {
+        display: flex;
+        align-items: flex-start;
+        background: rgba(255, 193, 7, 0.1);
+        border: none;
+        box-shadow: 0 0 0 1px rgba(255, 193, 7, 0.2);
+        border-radius: var(--radius-md);
+    }
+    
+    .glass-alert .alert-icon {
+        font-size: 1.25rem;
+        color: var(--warning-color);
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+    
+    .glass-alert .alert-content {
+        flex: 1;
+    }
+    
+    .input-group-glass {
+        display: flex;
+        background: rgba(255, 255, 255, 0.5);
+        border: none;
+        box-shadow: 0 2px 6px rgba(0, 49, 82, 0.08);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-speed) ease;
+        overflow: hidden;
+    }
+    
+    .input-group-glass:focus-within {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb), 0.25);
+    }
+    
+    .input-group-glass .input-group-text {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+    }
+    
+    .input-group-glass input,
+    .input-group-glass select {
+        border: none;
+        background: transparent;
+        box-shadow: none;
+    }
+    #createUserModal .modal-dialog {
+        z-index: 1050;
+    }
+    #cleanupModal .modal-dialog {
+        z-index: 1050;
+    }
+    
+    /* 分页控件样式 */
+    .pagination-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1rem 0;
+    }
+    
+    .pagination {
+        margin-bottom: 0.5rem;
+    }
+    
+    .pagination .page-link {
+        color: var(--primary-color);
+        background: rgba(255, 255, 255, 0.7);
+        border-color: rgba(0, 49, 82, 0.1);
+        transition: all var(--transition-speed) ease;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+    }
+    
+    .pagination .page-link:hover {
+        background-color: rgba(var(--primary-rgb), 0.1);
+        z-index: 1;
+    }
+    
+    .pagination .page-item.disabled .page-link {
+        color: var(--text-secondary);
+        background-color: rgba(0, 49, 82, 0.05);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 创建用户
+        document.getElementById('createUserBtn').addEventListener('click', function() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const userType = document.getElementById('userType').value;
+            
+            if (!username || !password) {
+                alert('请填写完整信息');
+                return;
+            }
+            
+            // 显示加载状态
+            const originalText = this.innerHTML;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 创建中...';
+            this.disabled = true;
+            
+            fetch('/api/create-user/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password,
+                    user_type: userType
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('创建成功');
+                    location.reload();
+                } else {
+                    alert(data.message || '创建失败');
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('操作失败，请重试');
+                this.innerHTML = originalText;
+                this.disabled = false;
+            });
+        });
+        
+        // 删除用户
+        const deleteUserBtns = document.querySelectorAll('.delete-user');
+        deleteUserBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const userId = this.dataset.id;
+                
+                if (confirm('确定要删除此用户吗？此操作不可恢复！')) {
+                    // 显示加载状态
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+                    this.disabled = true;
+                    
+                    fetch('/api/delete-user/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({
+                            user_id: userId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // 创建动画效果，然后刷新页面
+                            const row = this.closest('tr');
+                            row.style.transition = 'all 0.3s ease';
+                            row.style.opacity = '0';
+                            row.style.transform = 'translateX(20px)';
+                            
+                            setTimeout(() => {
+                                location.reload();
+                            }, 300);
+                        } else {
+                            alert(data.message || '删除失败');
+                            this.innerHTML = originalText;
+                            this.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('操作失败，请重试');
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                    });
+                }
+            });
+        });
+        
+        // 删除作业
+        const deleteAssignmentBtns = document.querySelectorAll('.delete-assignment');
+        deleteAssignmentBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const assignmentId = this.dataset.id;
+                
+                if (confirm('确定要删除此作业吗？此操作不可恢复！')) {
+                    // 显示加载状态
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+                    this.disabled = true;
+                    
+                    fetch('/api/delete-assignment/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({
+                            assignment_id: assignmentId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // 创建动画效果，然后刷新页面
+                            const row = this.closest('tr');
+                            row.style.transition = 'all 0.3s ease';
+                            row.style.opacity = '0';
+                            row.style.transform = 'translateX(20px)';
+                            
+                            setTimeout(() => {
+                                location.reload();
+                            }, 300);
+                        } else {
+                            alert(data.message || '删除失败');
+                            this.innerHTML = originalText;
+                            this.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('操作失败，请重试');
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                    });
+                }
+            });
+        });
+        
+        // 清理旧作业
+        document.getElementById('cleanupBtn').addEventListener('click', function() {
+            const days = document.getElementById('cleanupDays').value;
+            
+            if (!days || isNaN(days) || days <= 0) {
+                alert('请输入有效的天数（正整数）');
+                return;
+            }
+            
+            if (confirm(`确定要删除 ${days} 天前创建的所有作业吗？此操作不可恢复！`)) {
+                // 禁用按钮并显示加载状态
+                const originalText = this.innerHTML;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 正在处理...';
+                this.disabled = true;
+                
+                fetch('{% url "cleanup_old_assignments" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        days: days
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert(data.message || '清理旧作业失败');
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('操作失败，请重试');
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                });
+            }
+        });
+    });
+</script>
+{% endblock %} 

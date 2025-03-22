@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}编辑作业{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/edit_assignment.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="main-container"><div class="container py-4">
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card edit-assignment-card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">编辑作业</h5>
+                <a href="{% url 'assignment_detail' assignment.id %}" class="btn btn-sm btn-outline-light btn-icon">
+                    <i class="bi bi-x-lg"></i> 返回
+                </a>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
+                        <div class="input-group input-group-glass">
+                            <span class="input-group-text">
+                                <i class="bi bi-pencil-square"></i>
+                            </span>
+                            {{ form.title }}
+                        </div>
+                        {% if form.title.errors %}
+                        <div class="text-danger mt-1 small">
+                            {% for error in form.title.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                        <div class="input-group input-group-glass">
+                            <span class="input-group-text align-items-start pt-2">
+                                <i class="bi bi-text-paragraph"></i>
+                            </span>
+                            {{ form.description }}
+                        </div>
+                        {% if form.description.errors %}
+                        <div class="text-danger mt-1 small">
+                            {% for error in form.description.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.subject.id_for_label }}" class="form-label">{{ form.subject.label }}</label>
+                                <div class="input-group input-group-glass">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-book"></i>
+                                    </span>
+                                    {{ form.subject }}
+                                </div>
+                                {% if form.subject.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {% for error in form.subject.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.start_date.id_for_label }}" class="form-label">{{ form.start_date.label }}</label>
+                                <div class="input-group input-group-glass">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-calendar-plus"></i>
+                                    </span>
+                                    {{ form.start_date }}
+                                </div>
+                                {% if form.start_date.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {% for error in form.start_date.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.end_date.id_for_label }}" class="form-label">{{ form.end_date.label }}</label>
+                                <div class="input-group input-group-glass">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-calendar-check"></i>
+                                    </span>
+                                    {{ form.end_date }}
+                                </div>
+                                {% if form.end_date.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {% for error in form.end_date.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'assignment_detail' assignment.id %}" class="btn btn-outline-secondary btn-icon">
+                            <i class="bi bi-x-circle me-2"></i>取消
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-icon">
+                            <i class="bi bi-save me-2"></i>保存修改
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div></div></div>
+{% endblock %} 

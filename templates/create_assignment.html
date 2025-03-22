@@ -1,0 +1,711 @@
+{% extends 'base.html' %}
+
+{% block title %}创建作业{% endblock %}
+
+{% block content %}
+<div class="main-container"><div class="container py-4">
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card create-assignment-card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 card-title">创建作业</h5>
+                <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-primary btn-icon">
+                    <i class="bi bi-arrow-left me-1"></i> 返回
+                </a>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs custom-tabs mb-4" id="assignmentTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="single-tab" data-bs-toggle="tab" data-bs-target="#single" type="button" role="tab" aria-controls="single" aria-selected="true">
+                            <i class="bi bi-file-earmark-text me-1"></i> 单个作业
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="batch-tab" data-bs-toggle="tab" data-bs-target="#batch" type="button" role="tab" aria-controls="batch" aria-selected="false">
+                            <i class="bi bi-files me-1"></i> 批量作业
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="assignmentTabsContent">
+                    <div class="tab-pane fade show active" id="single" role="tabpanel" aria-labelledby="single-tab">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="mb-4">
+                                <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
+                                <div class="input-group-glass">
+                                    <span class="input-group-text"><i class="bi bi-pencil-square"></i></span>
+                                    {{ form.title }}
+                                </div>
+                                {% if form.title.errors %}
+                                <div class="text-danger mt-1 form-error">
+                                    {% for error in form.title.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                
+                                {% if previous_assignments %}
+                                <div class="mt-3">
+                                    <small class="text-muted">常用作业标题：</small>
+                                    <div class="d-flex flex-wrap gap-2 mt-2 suggestions-container">
+                                        {% for assignment in previous_assignments %}
+                                        <button type="button" class="btn btn-sm btn-outline-secondary title-suggestion suggestion-chip" data-title="{{ assignment.title }}">
+                                            {{ assignment.title }}
+                                        </button>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                                <div class="input-group-glass">
+                                    <span class="input-group-text"><i class="bi bi-journal-text"></i></span>
+                                    {{ form.description }}
+                                </div>
+                                {% if form.description.errors %}
+                                <div class="text-danger mt-1 form-error">
+                                    {% for error in form.description.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-4">
+                                        <label for="{{ form.subject.id_for_label }}" class="form-label">{{ form.subject.label }}</label>
+                                        <div class="input-group-glass">
+                                            <span class="input-group-text"><i class="bi bi-book"></i></span>
+                                            {{ form.subject }}
+                                        </div>
+                                        {% if form.subject.errors %}
+                                        <div class="text-danger mt-1 form-error">
+                                            {% for error in form.subject.errors %}
+                                            {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="mb-4">
+                                        <label for="{{ form.start_date.id_for_label }}" class="form-label">{{ form.start_date.label }}</label>
+                                        <div class="input-group-glass">
+                                            <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+                                            {{ form.start_date }}
+                                        </div>
+                                        {% if form.start_date.errors %}
+                                        <div class="text-danger mt-1 form-error">
+                                            {% for error in form.start_date.errors %}
+                                            {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="mb-4">
+                                        <label for="{{ form.end_date.id_for_label }}" class="form-label">{{ form.end_date.label }}</label>
+                                        <div class="input-group-glass">
+                                            <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
+                                            {{ form.end_date }}
+                                        </div>
+                                        {% if form.end_date.errors %}
+                                        <div class="text-danger mt-1 form-error">
+                                            {% for error in form.end_date.errors %}
+                                            {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg btn-icon">
+                                    <i class="bi bi-plus-circle me-2"></i> 创建作业
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="batch" role="tabpanel" aria-labelledby="batch-tab">
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="batch_submit" value="1">
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-4">
+                                        <label for="{{ batch_form.subject.id_for_label }}" class="form-label">{{ batch_form.subject.label }}</label>
+                                        <div class="input-group-glass">
+                                            <span class="input-group-text"><i class="bi bi-book"></i></span>
+                                            {{ batch_form.subject }}
+                                        </div>
+                                        {% if batch_form.subject.errors %}
+                                        <div class="text-danger mt-1 form-error">
+                                            {% for error in batch_form.subject.errors %}
+                                            {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="mb-4">
+                                        <label for="{{ batch_form.start_date.id_for_label }}" class="form-label">{{ batch_form.start_date.label }}</label>
+                                        <div class="input-group-glass">
+                                            <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+                                            {{ batch_form.start_date }}
+                                        </div>
+                                        {% if batch_form.start_date.errors %}
+                                        <div class="text-danger mt-1 form-error">
+                                            {% for error in batch_form.start_date.errors %}
+                                            {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="mb-4">
+                                        <label for="{{ batch_form.end_date.id_for_label }}" class="form-label">{{ batch_form.end_date.label }}</label>
+                                        <div class="input-group-glass">
+                                            <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
+                                            {{ batch_form.end_date }}
+                                        </div>
+                                        {% if batch_form.end_date.errors %}
+                                        <div class="text-danger mt-1 form-error">
+                                            {% for error in batch_form.end_date.errors %}
+                                            {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="{{ batch_form.assignments.id_for_label }}" class="form-label">{{ batch_form.assignments.label }}</label>
+                                <div class="input-group-glass">
+                                    <span class="input-group-text"><i class="bi bi-list-task"></i></span>
+                                    {{ batch_form.assignments }}
+                                </div>
+                                {% if batch_form.assignments.errors %}
+                                <div class="text-danger mt-1 form-error">
+                                    {% for error in batch_form.assignments.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <div class="form-text format-guide mt-2">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    每行输入一个作业，格式为"标题|描述"，例如：<br>
+                                    <code>练习册两页|完成练习册第15-16页练习</code><br>
+                                    <code>日常积累|积累有关李白的内容</code>
+                                </div>
+                                
+                                {% if previous_assignments %}
+                                <div class="mt-3">
+                                    <small class="text-muted">添加常用作业：</small>
+                                    <div class="d-flex flex-wrap gap-2 mt-2 suggestions-container">
+                                        {% for assignment in previous_assignments %}
+                                        <button type="button" class="btn btn-sm btn-outline-secondary batch-title-suggestion suggestion-chip" data-title="{{ assignment.title }}">
+                                            {{ assignment.title }}
+                                        </button>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="d-grid mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg btn-icon">
+                                    <i class="bi bi-files me-2"></i> 批量创建作业
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div></div></div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .create-assignment-card {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        /* border: 1px solid rgba(0, 49, 82, 0.05); */
+        border: none;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+        transition: all var(--transition-speed) ease;
+    }
+    
+    .create-assignment-card:hover {
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .card-title {
+        font-weight: 600;
+        color: var(--secondary-color);
+    }
+    
+    .custom-tabs {
+        border-bottom: 2px solid rgba(0, 49, 82, 0.1);
+    }
+    
+    .custom-tabs .nav-link {
+        border: none;
+        color: var(--text-secondary);
+        position: relative;
+        padding: 0.75rem 1.5rem;
+        transition: all var(--transition-speed) ease;
+    }
+    
+    .custom-tabs .nav-link.active {
+        color: var(--primary-color);
+        background: transparent;
+        font-weight: 600;
+    }
+    
+    .custom-tabs .nav-link.active::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        border-radius: 2px 2px 0 0;
+    }
+    
+    .custom-tabs .nav-link:hover:not(.active) {
+        background-color: rgba(0, 49, 82, 0.03);
+    }
+    
+    .input-group-glass {
+        display: flex;
+        background: rgba(255, 255, 255, 0.5);
+        /* border: 1px solid rgba(0, 49, 82, 0.08); */
+        border: none;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        transition: all var(--transition-speed) ease;
+        overflow: hidden;
+    }
+
+    .input-group-glass:focus-within {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb), 0.25);
+    }
+
+    .input-group-glass .input-group-text {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+    }
+
+    .input-group-glass input,
+    .input-group-glass select,
+    .input-group-glass textarea {
+        border: none;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .suggestion-chip {
+        background: rgba(255, 255, 255, 0.7);
+        /* border: 1px solid rgba(0, 49, 82, 0.1); */
+        border: none;
+        box-shadow: var(--shadow-sm);
+        border-radius: 20px;
+        transition: all var(--transition-speed) ease;
+        padding: 0.35rem 0.8rem;
+        color: var(--text-primary);
+    }
+
+    .suggestion-chip:hover {
+        background: rgba(255, 255, 255, 0.9);
+        /* border-color: var(--primary-color); */
+        box-shadow: 0 0 0 1px var(--primary-color), var(--shadow-sm);
+        transform: translateY(-2px);
+        color: var(--primary-color);
+    }
+
+    .suggestions-container {
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: var(--radius-sm);
+    }
+
+    .form-error {
+        font-size: 0.9rem;
+        padding: 0.3rem 0.5rem;
+        border-radius: var(--radius-sm);
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+
+    .btn-icon {
+        background-color: var(--secondary-color);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all var(--transition-speed) cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .btn-icon:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .format-guide {
+        background-color: rgba(0, 49, 82, 0.03);
+        padding: 0.8rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.9rem;
+    }
+
+    .format-guide code {
+        background-color: rgba(255, 255, 255, 0.7);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        color: var(--accent-color);
+    }
+
+    .completion-wrapper {
+        padding: 0.5rem;
+        background-color: rgba(255, 255, 255, 0.6);
+        border-radius: var(--radius-sm);
+        /* border: 1px solid rgba(0, 49, 82, 0.05); */
+        border: none;
+        box-shadow: var(--shadow-sm);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('页面加载完成，开始初始化表单...');
+        
+        // 单个作业和批量作业选择框
+        const subjectSelect = document.getElementById('{{ form.subject.id_for_label }}');
+        const batchSubjectSelect = document.getElementById('{{ batch_form.subject.id_for_label }}');
+        
+        // 记录表单元素状态
+        console.log('单个作业科目选择器:', subjectSelect ? '找到' : '未找到');
+        console.log('批量作业科目选择器:', batchSubjectSelect ? '找到' : '未找到');
+        
+        // 从localStorage读取之前选择的科目
+        const lastSelectedSubject = localStorage.getItem('lastSelectedSubject');
+        console.log('上次选择的科目ID:', lastSelectedSubject);
+        
+        // 选项卡元素
+        const batchTab = document.getElementById('batch-tab');
+        const singleTab = document.getElementById('single-tab');
+        const singleTabContent = document.getElementById('single');
+        const batchTabContent = document.getElementById('batch');
+        
+        // 从localStorage读取上次选择的选项卡
+        const lastSelectedTab = localStorage.getItem('lastSelectedTab');
+        console.log('上次选择的选项卡:', lastSelectedTab);
+        
+        // 强制更新选择框的选中值，确保UI显示正确
+        function forceUpdateSelectUI(selectElement, value) {
+            if (!selectElement || !value) return false;
+            
+            // 找到选项并确保它存在
+            const option = selectElement.querySelector(`option[value="${value}"]`);
+            if (!option) {
+                console.error('找不到对应的选项:', value);
+                return false;
+            }
+            
+            // 设置值
+            selectElement.value = value;
+            
+            // 创建并触发change事件
+            const event = new Event('change', { bubbles: true });
+            selectElement.dispatchEvent(event);
+            
+            // 直接设置选中
+            for (let i = 0; i < selectElement.options.length; i++) {
+                if (selectElement.options[i].value === value) {
+                    selectElement.options[i].selected = true;
+                    break;
+                }
+            }
+            
+            console.log(`强制更新选择框成功, ID: ${selectElement.id}, 值: ${value}`);
+            return true;
+        }
+        
+        // 手动处理选项卡切换
+        function manuallyActivateTab(tabElement, contentElement) {
+            if (!tabElement || !contentElement) return;
+            
+            // 移除所有选项卡的激活状态
+            document.querySelectorAll('[role="tab"]').forEach(tab => {
+                tab.classList.remove('active');
+                tab.setAttribute('aria-selected', 'false');
+            });
+            
+            // 移除所有内容区域的激活状态
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('show', 'active');
+            });
+            
+            // 激活指定的选项卡
+            tabElement.classList.add('active');
+            tabElement.setAttribute('aria-selected', 'true');
+            
+            // 激活指定的内容区域
+            contentElement.classList.add('show', 'active');
+            
+            console.log(`手动激活选项卡: ${tabElement.id}`);
+        }
+        
+        // 设置所有表单的默认值
+        function initializeFormValues() {
+            if (!lastSelectedSubject) return;
+            
+            // 设置单个作业表单的默认科目
+            if (subjectSelect && subjectSelect.querySelector(`option[value="${lastSelectedSubject}"]`)) {
+                console.log('设置单个作业表单的默认科目:', lastSelectedSubject);
+                forceUpdateSelectUI(subjectSelect, lastSelectedSubject);
+            }
+            
+            // 设置批量作业表单的默认科目
+            if (batchSubjectSelect && batchSubjectSelect.querySelector(`option[value="${lastSelectedSubject}"]`)) {
+                console.log('设置批量作业表单的默认科目:', lastSelectedSubject);
+                forceUpdateSelectUI(batchSubjectSelect, lastSelectedSubject);
+            }
+        }
+        
+        // 等待DOM完全就绪后进行初始化
+        setTimeout(() => {
+            // 先初始化表单值
+            initializeFormValues();
+            
+            // 然后根据上次的选项卡选择决定激活哪个选项卡
+            if (lastSelectedTab === 'batch' && batchTab && batchTabContent) {
+                console.log('手动激活批量作业选项卡...');
+                manuallyActivateTab(batchTab, batchTabContent);
+                
+                // 重新确保批量作业表单的默认值设置正确
+                if (lastSelectedSubject && batchSubjectSelect) {
+                    setTimeout(() => {
+                        forceUpdateSelectUI(batchSubjectSelect, lastSelectedSubject);
+                        
+                        // 更新批量作业表单的科目推荐
+                        if (batchSubjectSelect.value) {
+                            updateSubjectSuggestions(batchSubjectSelect.value, 'batch');
+                        }
+                    }, 200);
+                }
+            } else if (singleTab && singleTabContent) {
+                console.log('手动激活单个作业选项卡...');
+                manuallyActivateTab(singleTab, singleTabContent);
+                
+                // 更新单个作业表单的科目推荐
+                if (subjectSelect && subjectSelect.value) {
+                    updateSubjectSuggestions(subjectSelect.value, 'single');
+                }
+            }
+        }, 0);
+        
+        // 为选项卡添加点击事件处理
+        if (singleTab && singleTabContent) {
+            singleTab.addEventListener('click', function(e) {
+                e.preventDefault();
+                manuallyActivateTab(singleTab, singleTabContent);
+                localStorage.setItem('lastSelectedTab', 'single');
+                
+                // 更新单个作业推荐
+                if (subjectSelect && subjectSelect.value) {
+                    updateSubjectSuggestions(subjectSelect.value, 'single');
+                }
+            });
+        }
+        
+        if (batchTab && batchTabContent) {
+            batchTab.addEventListener('click', function(e) {
+                e.preventDefault();
+                manuallyActivateTab(batchTab, batchTabContent);
+                localStorage.setItem('lastSelectedTab', 'batch');
+                
+                // 确保批量作业表单的默认值设置正确
+                if (lastSelectedSubject && batchSubjectSelect) {
+                    setTimeout(() => {
+                        forceUpdateSelectUI(batchSubjectSelect, lastSelectedSubject);
+                        
+                        // 更新批量作业表单的科目推荐
+                        if (batchSubjectSelect.value) {
+                            updateSubjectSuggestions(batchSubjectSelect.value, 'batch');
+                        }
+                    }, 100);
+                }
+            });
+        }
+        
+        // 当用户改变科目选择时，保存到localStorage并同步另一个表单
+        if (subjectSelect) {
+            subjectSelect.addEventListener('change', function() {
+                const selectedValue = this.value;
+                console.log('单个作业科目变更为:', selectedValue);
+                localStorage.setItem('lastSelectedSubject', selectedValue);
+                updateSubjectSuggestions(selectedValue, 'single');
+                
+                // 同步更新批量作业表单
+                if (batchSubjectSelect && batchSubjectSelect.value !== selectedValue) {
+                    forceUpdateSelectUI(batchSubjectSelect, selectedValue);
+                }
+            });
+        }
+        
+        if (batchSubjectSelect) {
+            batchSubjectSelect.addEventListener('change', function() {
+                const selectedValue = this.value;
+                console.log('批量作业科目变更为:', selectedValue);
+                localStorage.setItem('lastSelectedSubject', selectedValue);
+                updateSubjectSuggestions(selectedValue, 'batch');
+                
+                // 同步更新单个作业表单
+                if (subjectSelect && subjectSelect.value !== selectedValue) {
+                    forceUpdateSelectUI(subjectSelect, selectedValue);
+                }
+            });
+        }
+
+        // 单个作业标题推荐
+        const titleSuggestions = document.querySelectorAll('.title-suggestion');
+        const titleInput = document.getElementById('{{ form.title.id_for_label }}');
+        
+        titleSuggestions.forEach(suggestion => {
+            suggestion.addEventListener('click', function() {
+                titleInput.value = this.dataset.title;
+                titleInput.focus();
+                
+                // 添加过渡动画
+                this.classList.add('active-suggestion');
+                setTimeout(() => {
+                    this.classList.remove('active-suggestion');
+                }, 500);
+            });
+        });
+        
+        // 批量作业标题推荐
+        const batchTitleSuggestions = document.querySelectorAll('.batch-title-suggestion');
+        const batchAssignmentsTextarea = document.getElementById('{{ batch_form.assignments.id_for_label }}');
+        
+        batchTitleSuggestions.forEach(suggestion => {
+            suggestion.addEventListener('click', function() {
+                const newLine = this.dataset.title + '|暂无';
+                
+                // 检查文本区域是否为空
+                if (batchAssignmentsTextarea.value.trim() === '') {
+                    batchAssignmentsTextarea.value = newLine;
+                } else {
+                    // 在末尾添加新行
+                    batchAssignmentsTextarea.value += '\n' + newLine;
+                }
+                
+                batchAssignmentsTextarea.focus();
+                
+                // 将光标定位到最后
+                batchAssignmentsTextarea.scrollTop = batchAssignmentsTextarea.scrollHeight;
+                
+                // 添加过渡动画
+                this.classList.add('active-suggestion');
+                setTimeout(() => {
+                    this.classList.remove('active-suggestion');
+                }, 500);
+            });
+        });
+        
+        // 学科变化 - 需要使用AJAX动态获取该学科的常用作业
+        function updateSubjectSuggestions(subjectId, mode) {
+            if (!subjectId) return;
+            
+            console.log(`正在为${mode}模式加载科目建议: ${subjectId}`);
+            
+            // 使用AJAX获取特定学科的推荐标题
+            fetch(`/api/subject-suggestions/?subject_id=${subjectId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.suggestions) {
+                        // 确定正确的容器元素
+                        let containerSelector = mode === 'single' ? 
+                            '#single .suggestions-container' : 
+                            '#batch .suggestions-container';
+                        
+                        const container = document.querySelector(containerSelector);
+                        
+                        if (!container) {
+                            console.error(`找不到${mode}模式的建议容器，选择器: ${containerSelector}`);
+                            return;
+                        }
+                        
+                        console.log(`为${mode}模式加载了${data.suggestions.length}个建议`);
+                        
+                        // 清空现有推荐
+                        container.innerHTML = '';
+                        
+                        // 添加新推荐
+                        data.suggestions.forEach(suggestion => {
+                            const btn = document.createElement('button');
+                            btn.type = 'button';
+                            btn.className = mode === 'single' ? 
+                                'btn btn-sm btn-outline-secondary title-suggestion suggestion-chip' : 
+                                'btn btn-sm btn-outline-secondary batch-title-suggestion suggestion-chip';
+                            btn.dataset.title = suggestion.title;
+                            btn.textContent = suggestion.title;
+                            
+                            // 添加点击事件
+                            btn.addEventListener('click', function() {
+                                if (mode === 'single') {
+                                    titleInput.value = this.dataset.title;
+                                    titleInput.focus();
+                                } else {
+                                    const newLine = this.dataset.title + '|暂无';
+                                    if (batchAssignmentsTextarea.value.trim() === '') {
+                                        batchAssignmentsTextarea.value = newLine;
+                                    } else {
+                                        batchAssignmentsTextarea.value += '\n' + newLine;
+                                    }
+                                    batchAssignmentsTextarea.focus();
+                                    batchAssignmentsTextarea.scrollTop = batchAssignmentsTextarea.scrollHeight;
+                                }
+                                
+                                // 添加过渡动画
+                                this.classList.add('active-suggestion');
+                                setTimeout(() => {
+                                    this.classList.remove('active-suggestion');
+                                }, 500);
+                            });
+                            
+                            container.appendChild(btn);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('获取科目建议失败:', error);
+                });
+        }
+    });
+</script>
+{% endblock %} 

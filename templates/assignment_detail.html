@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}作业详情{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/assignment_detail.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="main-container"><div class="container py-4">
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex align-items-center">
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-primary me-3 btn-with-icon">
+                <i class="bi bi-arrow-left"></i> 返回
+            </a>
+            <h2 class="mb-0">作业详情</h2>
+            
+            <a href="{% url 'edit_assignment' assignment.id %}" class="btn btn-primary ms-auto btn-with-icon">
+                <i class="bi bi-pencil"></i> 编辑作业
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card mb-4 detail-card">
+            <div class="card-header">
+                <h5 class="mb-0">{{ assignment.title }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <div class="detail-label">
+                                <i class="bi bi-journal-bookmark me-2"></i>科目
+                            </div>
+                            <div class="detail-value">{{ assignment.subject.name }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <div class="detail-label">
+                                <i class="bi bi-calendar-check me-2"></i>开始日期
+                            </div>
+                            <div class="detail-value">{{ assignment.start_date|date:"Y-m-d" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <div class="detail-label">
+                                <i class="bi bi-calendar-x me-2"></i>截止日期
+                            </div>
+                            <div class="detail-value">{{ assignment.end_date|date:"Y-m-d" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <div class="detail-label">
+                                <i class="bi bi-clock-history me-2"></i>创建时间
+                            </div>
+                            <div class="detail-value">{{ assignment.created_at|date:"Y-m-d H:i" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="detail-item description-item">
+                            <div class="detail-label">
+                                <i class="bi bi-card-text me-2"></i>描述
+                            </div>
+                            <div class="detail-value mt-2">{{ assignment.description|linebreaks }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card completion-card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">完成情况</h5>
+                    <div class="completion-stats">
+                        <div class="d-flex align-items-center">
+                            <div class="completion-pie" 
+                                 style="--percentage: {{ assignment.completed_count|default:0|floatformat:0 }}; --total: {{ assignment.total_count|default:1|floatformat:0 }}">
+                                <div class="completion-pie-inner">
+                                    <div class="completion-pie-value">{{ assignment.completed_count|default:0 }}/{{ assignment.total_count|default:0 }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="completion-list">
+                    {% for record in completion_records %}
+                    <div class="completion-item d-flex justify-content-between align-items-center">
+                        <div class="student-info">
+                            <span class="student-name">{{ record.student.username }}</span>
+                            {% if record.student.student_id %}
+                            <small class="student-id">(学号: {{ record.student.student_id }})</small>
+                            {% endif %}
+                        </div>
+                        {% if record.completed %}
+                        <span class="status-badge status-complete">
+                            <i class="bi bi-check-circle me-1"></i>已完成
+                        </span>
+                        {% else %}
+                        <span class="status-badge status-incomplete">
+                            <i class="bi bi-x-circle me-1"></i>未完成
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="alert alert-info mb-0 glass-alert">
+                        <i class="bi bi-info-circle me-2"></i>暂无学生完成记录
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card-footer text-muted">
+                <div class="d-flex justify-content-between">
+                    <span><i class="bi bi-check-all me-1"></i>已完成: {{ assignment.completed_count }}</span>
+                    <span><i class="bi bi-people me-1"></i>总人数: {{ assignment.total_count }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+</div>
+{% endblock %}

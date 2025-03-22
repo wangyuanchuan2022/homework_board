@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}设置{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-card {
+        margin-bottom: 2rem;
+    }
+    .danger-zone {
+        border: 1px solid #dc3545;
+        border-radius: 0.375rem;
+    }
+    .danger-zone .card-header {
+        background-color: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+        border-bottom: 1px solid #dc3545;
+    }
+    .hidden-subjects-container .form-check {
+        margin-bottom: 0.5rem;
+    }
+    
+    /* 自定义模态框样式 */
+    #deleteAccountModal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 2000;
+        pointer-events: none;
+    }
+    
+    #deleteAccountModal .modal-dialog {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        margin: 0;
+        pointer-events: auto;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        max-width: 500px;
+        width: 90%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-container"><div class="container py-4">
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">账号设置</h1>
+            
+            {% if messages %}
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                {% for message in messages %}
+                {{ message }}
+                {% endfor %}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
+            
+            <div class="card settings-card">
+                <div class="card-header">
+                    <h5 class="mb-0">基本信息</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'update_username' %}" class="mb-3">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label" for="{{ username_form.username.id_for_label }}">用户名</label>
+                            {{ username_form.username }}
+                            {% if username_form.username.errors %}
+                            <div class="text-danger mt-1">
+                                {{ username_form.username.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <button type="submit" class="btn btn-primary">保存用户名</button>
+                    </form>
+                    <div class="mb-3">
+                        <label class="form-label">用户类型</label>
+                        <input type="text" class="form-control" value="{{ user.get_user_type_display }}" readonly>
+                    </div>
+                    {% if user.student_id %}
+                    <div class="mb-3">
+                        <label class="form-label">学号</label>
+                        <input type="text" class="form-control" value="{{ user.student_id }}" readonly>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if user.user_type == 'student' %}
+            <div class="card settings-card">
+                <div class="card-header">
+                    <h5 class="mb-0">隐藏科目</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">选择不想在仪表板中显示作业的科目：</p>
+                    
+                    <form method="post" action="{% url 'save_hidden_subjects' %}">
+                        {% csrf_token %}
+                        <div class="hidden-subjects-container">
+                            {% for subject in all_subjects %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="hidden_subjects" 
+                                       value="{{ subject.id }}" id="subject-{{ subject.id }}"
+                                       {% if subject.id in user_hidden_subjects %}checked{% endif %}>
+                                <label class="form-check-label" for="subject-{{ subject.id }}">
+                                    {{ subject.name }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">保存设置</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="card settings-card danger-zone">
+                <div class="card-header">
+                    <h5 class="mb-0">危险区域</h5>
+                </div>
+                <div class="card-body">
+                    <h6>删除账号</h6>
+                    <p class="text-muted">删除账号后，您的所有数据将被永久删除且无法恢复。</p>
+                    <button type="button" class="btn btn-danger" id="showDeleteAccountBtn">
+                        删除我的账号
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div></div></div>
+
+<!-- 删除账号确认模态框 -->
+<div class="modal" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteAccountModalLabel">确认删除账号</h5>
+                <button type="button" class="btn-close" id="closeModalBtn" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>您确定要永久删除您的账号吗？此操作无法撤销。</p>
+                <form id="deleteAccountForm" method="post" action="{% url 'delete_my_account' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">请输入您的密码以确认：</label>
+                        <input type="password" class="form-control" id="confirmPassword" name="password" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelBtn">取消</button>
+                <button type="button" class="btn btn-danger" onclick="document.getElementById('deleteAccountForm').submit()">确认删除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 自动隐藏消息提示
+        const alerts = document.querySelectorAll('.alert-info');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                alert.classList.remove('show');
+                setTimeout(() => {
+                    alert.remove();
+                }, 150); // 等待淡出动画完成后移除元素
+            }, 2000); // 3秒后开始隐藏
+        });
+
+        const modal = document.getElementById('deleteAccountModal');
+        const showBtn = document.getElementById('showDeleteAccountBtn');
+        const closeBtn = document.getElementById('closeModalBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        
+        // 显示模态框
+        showBtn.addEventListener('click', function() {
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden'; // 防止背景滚动
+            
+            // 确保模态框在视口中央
+            const modalDialog = modal.querySelector('.modal-dialog');
+            modalDialog.style.top = '50%';
+            modalDialog.style.left = '50%';
+            modalDialog.style.transform = 'translate(-50%, -50%)';
+            
+            // 确保模态框获得焦点
+            setTimeout(function() {
+                modal.querySelector('input[name="password"]').focus();
+            }, 100);
+        });
+        
+        // 关闭模态框
+        function closeModal() {
+            modal.style.display = 'none';
+            document.body.style.overflow = ''; // 恢复背景滚动
+        }
+        
+        closeBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+        
+        // 点击模态框外部区域时关闭模态框
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // 按ESC键关闭模态框
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.style.display === 'block') {
+                closeModal();
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %} 

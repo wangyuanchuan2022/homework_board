@@ -1,0 +1,50 @@
+
+    .edit-assignment-card {
+        transform: translateY(-5px);
+        transition: all var(--transition-speed) ease;
+    }
+    
+    .edit-assignment-card:hover {
+        transform: translateY(-10px);
+    }
+    
+    .input-group-glass {
+        transition: all var(--transition-speed) ease;
+    }
+    
+    .input-group-glass:focus-within {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .input-group-glass .input-group-text {
+        background-color: rgba(0, 49, 82, 0.05);
+        border-color: rgba(0, 49, 82, 0.1);
+        color: var(--primary-color);
+    }
+    
+    .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all var(--transition-speed) cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    .btn-icon:hover {
+        transform: translateY(-2px);
+    }
+    
+    textarea.form-control {
+        min-height: 120px;
+    }
+    
+    .form-control, .form-select {
+        border-color: rgba(0, 49, 82, 0.1);
+        background-color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .form-control:focus, .form-select:focus {
+        background-color: rgba(255, 255, 255, 0.95);
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem rgba(0, 49, 82, 0.1);
+    }

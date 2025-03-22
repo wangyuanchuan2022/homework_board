@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}教师仪表盘{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/teacher_dashboard.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="main-container"><div class="container py-4">
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center dashboard-header">
+            <h2 class="mb-0 dashboard-title">我的作业</h2>
+            <a href="{% url 'create_assignment' %}" class="btn btn-primary btn-lg btn-icon">
+                <i class="bi bi-plus-circle me-2"></i> 布置新作业
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if assignments %}
+<div class="row g-4">
+    {% for assignment in assignments %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card assignment-card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-truncate" title="{{ assignment.title }}">{{ assignment.title }}</h5>
+                <span class="badge subject-badge">{{ assignment.subject.name }}</span>
+            </div>
+            <div class="card-body">
+                <div class="description-box mb-3">
+                    <p class="card-text">{{ assignment.description|truncatechars:100 }}</p>
+                </div>
+                <div class="assignment-meta">
+                    <div class="assignment-date">
+                        <i class="bi bi-calendar-event me-2"></i> 开始日期：{{ assignment.start_date|date:"Y-m-d" }}
+                    </div>
+                    <div class="assignment-date">
+                        <i class="bi bi-calendar-check me-2"></i> 截止日期：{{ assignment.end_date|date:"Y-m-d" }}
+                    </div>
+                    <div class="mt-3">
+                        {% if assignment.total_count > 0 %}
+                        <div class="completion-wrapper">
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar" role="progressbar" style="width: {{ assignment.completion_percentage }}%"></div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-2 text-muted small">
+                                <span>完成进度</span>
+                                <span>{{ assignment.completed_count }}/{{ assignment.total_count }} ({{ assignment.completion_percentage }}%)</span>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="no-students-box">
+                            <i class="bi bi-people"></i> 暂无学生
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex assignment-actions">
+                    <a href="{% url 'assignment_detail' assignment.id %}" class="btn btn-sm btn-outline-primary flex-grow-1 me-1 btn-icon">
+                        <i class="bi bi-eye me-1"></i> 查看详情
+                    </a>
+                    <a href="{% url 'edit_assignment' assignment.id %}" class="btn btn-sm btn-outline-secondary flex-grow-1 ms-1 btn-icon">
+                        <i class="bi bi-pencil me-1"></i> 编辑
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-light text-center py-5 empty-state">
+    <div class="empty-icon-container mb-3">
+        <i class="bi bi-journal-text"></i>
+    </div>
+    <h3 class="mt-3">还没有布置作业</h3>
+    <p class="text-muted">点击上方的"布置新作业"按钮开始创建作业</p>
+</div>{% endif %}
+</div></div>
+{% endblock %} 

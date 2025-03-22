@@ -1,0 +1,359 @@
+/* 日历样式增强 */
+    .calendar-day {
+        cursor: pointer;
+        padding: 10px;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 2px auto;
+        position: relative;
+        z-index: 1;
+        /* 移除可能存在的边框 */
+        border: none;
+    }
+
+    .calendar-day:hover {
+        background-color: rgba(var(--bs-primary-rgb), 0.1);
+        transform: scale(1.1);
+    }
+
+    .calendar-day.active {
+        background-color: var(--primary-color);
+        color: white;
+        box-shadow: 0 4px 8px rgba(0, 49, 82, 0.15);
+        border: none;
+    }
+
+    .calendar-day.today:not(.active) {
+        /* 替换实线边框为阴影效果 */
+        border: none;
+        box-shadow: 0 0 0 2px var(--primary-color);
+    }
+
+    /* 如果日历中有assignment-range可能导致蓝色细线，修改此样式 */
+    .calendar-day.assignment-range::before {
+        content: '';
+        position: absolute;
+        background-color: rgba(var(--bs-primary-rgb), 0.1);
+        height: 100%;
+        width: 100%;
+        z-index: -1;
+        left: 0;
+        top: 0;
+        border-radius: 50%;
+    }
+
+    /* 移除表格单元格边框 */
+    .calendar-container table td {
+        border: none;
+    }
+
+    /* 处理作业日期范围的开始和结束日的显示 */
+    .calendar-day.assignment-start::before,
+    .calendar-day.assignment-end::before {
+        background-color: rgba(var(--bs-primary-rgb), 0.1);
+        z-index: -1;
+        left: 0;
+        top: 0;
+        border-radius: 50%;
+    }
+
+    .day-number {
+        z-index: 1;
+        position: relative;
+    }
+
+    /* 作业日期范围标注 */
+    .assignment-range {
+        /* 移除背景色，使作业范围日期保持透明 */
+        background-color: transparent;
+        position: relative;
+    }
+
+    .assignment-range::before {
+        /* 移除横线连接效果 */
+        background-color: rgba(var(--primary-color), 0.4);
+    }
+
+    .assignment-start {
+        /* 移除蓝色边框 */
+        border-left: none;
+        position: relative;
+        overflow: visible;
+    }
+
+    /* 自定义列表项选中样式 */
+    .list-group-item.active {
+        background-color: rgba(0, 49, 82, 0.05) !important;
+        color: var(--text-primary) !important;
+        border-color: rgba(0, 49, 82, 0.1) !important;
+        position: relative;
+    }
+
+    .list-group-item.active::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background-color: var(--primary-color);
+    }
+
+    /* 确保复选框可点击 */
+    .form-check-input {
+        position: relative;
+        z-index: 5;
+        cursor: pointer;
+    }
+
+    /* 悬停效果 */
+    .assignment-item {
+        background-color: transparent;
+        border-radius: var(--radius-sm);
+        border-color: rgba(0, 49, 82, 0.1);
+        margin-bottom: 0.5rem;
+        padding: 0.75rem 1rem;
+    }
+
+    .assignment-item:hover {
+        background-color: rgba(0, 49, 82, 0.03);
+        transform: translateY(-1px);
+    }
+
+    /* 作业链接样式 */
+    .assignment-link {
+        cursor: pointer;
+        padding: 4px 0;
+        color: var(--text-primary) !important;
+    }
+
+    .assignment-title {
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+    }
+
+    /* 警告框玻璃态 */
+    .glass-alert {
+        background-color: rgba(13, 202, 240, 0.1);
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        border: 1px solid rgba(13, 202, 240, 0.2);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+    }
+
+    /* 空状态样式 */
+    .empty-state {
+        background-color: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .empty-icon-container {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background-color: rgba(0, 49, 82, 0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+    }
+
+    .empty-icon-container i {
+        font-size: 40px;
+        color: var(--primary-color);
+    }
+
+    /* 科目卡片定制 */
+    .subject-card {
+        height: calc(100% - 1.5rem);
+    }
+
+    /* 作业列表样式 */
+    .assignment-list {
+        max-height: 400px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(0, 49, 82, 0.2) transparent;
+    }
+
+    .assignment-list::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .assignment-list::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .assignment-list::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 49, 82, 0.2);
+        border-radius: 10px;
+    }
+
+    /* 状态提示 */
+    .status-alert {
+        background-color: rgba(25, 135, 84, 0.1);
+        color: var(--bs-success);
+        border: none;
+        border-radius: var(--radius-sm);
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        box-shadow: var(--shadow-sm);
+    }
+
+    /* 表格响应式调整 */
+    .table-responsive {
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+    }
+
+    /* 确保表格按设计显示 */
+    .table {
+        margin-bottom: 0;
+        border-collapse: separate;
+        border-spacing: 2px;
+        border: none;
+        background-color: transparent;
+    }
+
+    .table th, .table td {
+        padding: 0.5rem;
+        vertical-align: middle;
+        border: none;
+    }
+
+    @media (max-width: 768px) {
+        .calendar-day {
+            width: 30px;
+            height: 30px;
+            font-size: 0.9rem;
+        }
+
+        .card-header h5 {
+            font-size: 1rem;
+        }
+    }
+
+    /* 移除所有卡片的白色边框 */
+    .card, .glass-card, .course-card, .assignment-card {
+        border: none;
+        box-shadow: var(--shadow-md);
+    }
+
+    /* 移除所有玻璃态UI元素的白色边框 */
+    .glass-alert, .glass-modal, .input-group-glass {
+        border: none;
+    }
+
+    /* 如果有必要，可以添加阴影来增强边界感 */
+    .glass-alert {
+        box-shadow: 0 0 0 1px rgba(255, 193, 7, 0.2);
+    }
+
+    /* 表格及表格容器 */
+    .calendar-container {
+        overflow: hidden;
+        border-radius: var(--radius-md);
+        background-color: rgba(255, 255, 255, 0.8);
+        box-shadow: var(--shadow-sm);
+        border: none;
+    }
+
+    .calendar-container table {
+        border-collapse: separate;
+        border-spacing: 0;
+        width: 100%;
+        border: none;
+    }
+
+    .calendar-container th {
+        padding: 10px;
+        text-align: center;
+        font-weight: 500;
+        border: none;
+        background-color: rgba(0, 0, 0, 0.03);
+        color: var(--text-secondary);
+    }
+
+    .calendar-container td {
+        text-align: center;
+        padding: 2px;
+        border: none;
+    }
+
+    .calendar-container tr {
+        border: none;
+    }
+
+    .calendar-container tr:not(:last-child) td {
+        border-bottom: none;
+    }
+
+    /* 日历控制按钮样式 */
+    .calendar-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        padding: 0.5rem;
+        border-radius: var(--radius-sm);
+        background-color: rgba(255, 255, 255, 0.5);
+        border: none;
+    }
+
+    .calendar-controls button {
+        background-color: rgba(255, 255, 255, 0.8);
+        border: none;
+        color: var(--text-secondary);
+        border-radius: var(--radius-sm);
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+        transition: all var(--transition-speed) ease;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .calendar-controls button:hover {
+        background-color: rgba(255, 255, 255, 0.95);
+        color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    /* 修改日历内部的边框线 */
+    .calendar-week-border {
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    /* 修复assignment-item中可能存在的边框 */
+    .assignment-item {
+        border: none;
+        border-radius: var(--radius-sm);
+        transition: all var(--transition-speed) ease;
+        margin-bottom: 0.5rem;
+        background-color: rgba(255, 255, 255, 0.7);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .assignment-item:hover {
+        background-color: rgba(255, 255, 255, 0.85);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+        transform: translateY(-1px);
+    }
+
+    .assignment-item.active {
+        background-color: rgba(0, 0, 0, 0.03);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    /* 确保列表元素没有边框 */
+    .list-group-item {
+        border: none;
+        background-color: transparent;
+    }
