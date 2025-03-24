@@ -16,8 +16,9 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
-from django.views import static
 from django.urls import path
+from django.views import static
+
 from board import views
 from homework_board import settings
 
@@ -32,6 +33,7 @@ urlpatterns = [
     path("settings/save-hidden-subjects/", views.save_hidden_subjects, name="save_hidden_subjects"),
     path("settings/delete-account/", views.delete_my_account, name="delete_my_account"),
     path("settings/update-username/", views.update_username, name="update_username"),
+    path("settings/change-password/", views.change_password, name="change_password"),
     path("teacher/dashboard/", views.teacher_dashboard, name="teacher_dashboard"),
     path("assignments/create/", views.create_assignment, name="create_assignment"),
     path("assignments/<int:pk>/", views.assignment_detail, name="assignment_detail"),

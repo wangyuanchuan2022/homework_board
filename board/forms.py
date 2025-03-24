@@ -1,9 +1,11 @@
+import re
+
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from .models import User, Assignment, Subject
 from django.core.exceptions import ValidationError
-from django.utils import timezone
-import re
+
+from .models import User, Assignment, Subject
+
 
 class CustomUserCreationForm(UserCreationForm):
     USER_TYPE_CHOICES = (
@@ -203,4 +205,45 @@ class UpdateUsernameForm(forms.Form):
         username = self.cleaned_data.get('username')
         if User.objects.filter(username=username).exclude(pk=self.user.pk).exists():
             raise ValidationError('此用户名已被使用')
-        return username 
+        return username
+
+
+class ChangePasswordForm(forms.Form):
+    """用于修改密码的表单"""
+    current_password = forms.CharField(
+        label='当前密码',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+    new_password = forms.CharField(
+        label='新密码',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        help_text='密码至少需要8个字符'
+    )
+    confirm_password = forms.CharField(
+        label='确认新密码',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+
+    def __init__(self, user=None, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_current_password(self):
+        current_password = self.cleaned_data.get('current_password')
+        if not self.user.check_password(current_password):
+            raise ValidationError('当前密码不正确')
+        return current_password
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password = cleaned_data.get('new_password')
+        confirm_password = cleaned_data.get('confirm_password')
+
+        if new_password and confirm_password:
+            if len(new_password) < 8:
+                self.add_error('new_password', '密码至少需要8个字符')
+
+            if new_password != confirm_password:
+                self.add_error('confirm_password', '两次输入的密码不一致')
+
+        return cleaned_data

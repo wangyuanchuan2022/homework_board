@@ -1,18 +1,21 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, logout, authenticate
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.utils import timezone
-from functools import wraps
 import calendar
 import datetime
-from .models import User, Subject, Assignment, CompletionRecord, HotTopic, HotTopicLike
-from .forms import CustomUserCreationForm, CustomAuthenticationForm, AssignmentForm, BatchAssignmentForm, UpdateUsernameForm
 import json
-from django.db import models
-from django.views.decorators.csrf import csrf_exempt
-from django.db.models import F, Count, Q
+from functools import wraps
+
+from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db import models
+from django.http import JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+
+from .forms import CustomUserCreationForm, CustomAuthenticationForm, AssignmentForm, BatchAssignmentForm, \
+    UpdateUsernameForm, ChangePasswordForm
+from .models import User, Subject, Assignment, CompletionRecord, HotTopic, HotTopicLike
+
 
 def user_type_required(user_types):
     def decorator(view_func):
@@ -159,9 +162,29 @@ def get_today_homework(request):
             
             # 构建返回的字符串
             result_str = ""
-            
-            # 按科目名称排序
-            for subject_name in sorted(subject_assignments.keys()):
+
+            # 科目的自定义排序顺序
+            subject_order = {
+                '其他': 0,
+                '语文': 1,
+                '数学': 2,
+                '英语': 3,
+                '物理': 4,
+                '化学': 5,
+                '生物': 6,
+                '历史': 7,
+                '地理': 8,
+                '政治': 9
+            }
+
+            # 按自定义顺序排序科目
+            sorted_subjects = sorted(
+                subject_assignments.keys(),
+                key=lambda x: subject_order.get(x, 100)  # 如果科目不在预定义列表中，放到最后
+            )
+
+            # 按照排序后的科目顺序输出
+            for subject_name in sorted_subjects:
                 result_str += f"{subject_name}：\n"
                 
                 # 对每个科目内的作业按截止日期排序
@@ -380,6 +403,26 @@ def student_dashboard(request):
         end_date = assignment.end_date
         if end_date.year == current_year and end_date.month == current_month:
             days_with_assignments.add(end_date.day)
+
+    # 科目的自定义排序顺序
+    subject_order = {
+        '其他': 0,
+        '语文': 1,
+        '数学': 2,
+        '英语': 3,
+        '物理': 4,
+        '化学': 5,
+        '生物': 6,
+        '历史': 7,
+        '地理': 8,
+        '政治': 9
+    }
+
+    # 按自定义顺序排序科目
+    sorted_subject_assignments = dict(sorted(
+        subject_assignments.items(),
+        key=lambda x: subject_order.get(x[0], 100)  # 如果科目不在预定义列表中，放到最后
+    ))
     
     context = {
         'calendar': cal,
@@ -389,7 +432,7 @@ def student_dashboard(request):
         'current_year': current_year,
         'current_month': current_month,
         'current_month_name': current_month_name,
-        'subject_assignments': subject_assignments,
+        'subject_assignments': sorted_subject_assignments,
         'days_with_assignments': days_with_assignments,
         'selected_assignment': selected_assignment,
     }
@@ -814,11 +857,15 @@ def settings_view(request):
     
     # 初始化用户名更新表单
     username_form = UpdateUsernameForm(user=request.user, initial={'username': request.user.username})
+
+    # 初始化密码修改表单
+    password_form = ChangePasswordForm(user=request.user)
     
     return render(request, 'settings.html', {
         'all_subjects': all_subjects,
         'user_hidden_subjects': user_hidden_subjects,
-        'username_form': username_form
+        'username_form': username_form,
+        'password_form': password_form
     })
 
 @login_required
@@ -1016,3 +1063,30 @@ def toggle_hot_topic_like(request):
             return JsonResponse({'success': False, 'message': '热搜不存在'})
     
     return JsonResponse({'success': False, 'message': '请求方法错误'})
+
+
+@login_required
+def change_password(request):
+    """修改用户密码"""
+    if request.method == 'POST':
+        form = ChangePasswordForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            # 修改密码
+            new_password = form.cleaned_data['new_password']
+            request.user.set_password(new_password)
+            request.user.save()
+
+            # 重新登录用户，因为修改密码会使当前会话失效
+            from django.contrib.auth import update_session_auth_hash
+            update_session_auth_hash(request, request.user)
+
+            from django.contrib import messages
+            messages.success(request, '密码已成功修改')
+        else:
+            # 显示表单错误信息
+            for field, errors in form.errors.items():
+                for error in errors:
+                    from django.contrib import messages
+                    messages.error(request, error)
+
+    return redirect('settings')

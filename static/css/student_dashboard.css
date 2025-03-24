@@ -34,17 +34,6 @@
     }
 
     /* 如果日历中有assignment-range可能导致蓝色细线，修改此样式 */
-    .calendar-day.assignment-range::before {
-        content: '';
-        position: absolute;
-        background-color: rgba(var(--bs-primary-rgb), 0.1);
-        height: 100%;
-        width: 100%;
-        z-index: -1;
-        left: 0;
-        top: 0;
-        border-radius: 50%;
-    }
 
     /* 移除表格单元格边框 */
     .calendar-container table td {
@@ -52,14 +41,6 @@
     }
 
     /* 处理作业日期范围的开始和结束日的显示 */
-    .calendar-day.assignment-start::before,
-    .calendar-day.assignment-end::before {
-        background-color: rgba(var(--bs-primary-rgb), 0.1);
-        z-index: -1;
-        left: 0;
-        top: 0;
-        border-radius: 50%;
-    }
 
     .day-number {
         z-index: 1;
@@ -67,22 +48,16 @@
     }
 
     /* 作业日期范围标注 */
-    .assignment-range {
-        /* 移除背景色，使作业范围日期保持透明 */
-        background-color: transparent;
-        position: relative;
-    }
-
     .assignment-range::before {
-        /* 移除横线连接效果 */
-        background-color: rgba(var(--primary-color), 0.4);
-    }
-
-    .assignment-start {
-        /* 移除蓝色边框 */
-        border-left: none;
-        position: relative;
-        overflow: visible;
+        content: '';
+        background-color: rgba(var(--bs-primary-rgb), 0.2);
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 50%;
+        z-index: 0;
     }
 
     /* 自定义列表项选中样式 */

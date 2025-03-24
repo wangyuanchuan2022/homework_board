@@ -56,8 +56,6 @@
                                         {% if selected_date.day == day and selected_date.month == current_month and selected_date.year == current_year %}active{% endif %}
                                         {% if today.day == day and today.month == current_month and today.year == current_year %}today{% endif %}
                                         {% if selected_assignment %}
-                                            {% if selected_assignment.start_date.day == current_day and selected_assignment.start_date.month == current_month and selected_assignment.start_date.year == current_year %}assignment-start{% endif %}
-                                            {% if selected_assignment.end_date.day == current_day and selected_assignment.end_date.month == current_month and selected_assignment.end_date.year == current_year %}assignment-end{% endif %}
                                             {% if selected_assignment.start_date.year < current_year or selected_assignment.start_date.year == current_year and selected_assignment.start_date.month < current_month or selected_assignment.start_date.year == current_year and selected_assignment.start_date.month == current_month and selected_assignment.start_date.day <= current_day %}
                                                 {% if selected_assignment.end_date.year > current_year or selected_assignment.end_date.year == current_year and selected_assignment.end_date.month > current_month or selected_assignment.end_date.year == current_year and selected_assignment.end_date.month == current_month and selected_assignment.end_date.day >= current_day %}
                                                     assignment-range

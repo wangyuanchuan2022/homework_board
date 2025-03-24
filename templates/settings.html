@@ -81,6 +81,55 @@
                         </div>
                         <button type="submit" class="btn btn-primary">保存用户名</button>
                     </form>
+
+                    <hr class="my-4">
+
+                    <form action="{% url 'change_password' %}" class="mb-3" method="post">
+                        {% csrf_token %}
+                        <h5 class="mb-3">修改密码</h5>
+
+                        <div class="mb-3">
+                            <label class="form-label" for="{{ password_form.current_password.id_for_label }}">
+                                {{ password_form.current_password.label }}
+                            </label>
+                            {{ password_form.current_password }}
+                            {% if password_form.current_password.errors %}
+                            <div class="text-danger mt-1">
+                                {{ password_form.current_password.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" for="{{ password_form.new_password.id_for_label }}">
+                                {{ password_form.new_password.label }}
+                            </label>
+                            {{ password_form.new_password }}
+                            <small class="form-text text-muted">{{ password_form.new_password.help_text }}</small>
+                            {% if password_form.new_password.errors %}
+                            <div class="text-danger mt-1">
+                                {{ password_form.new_password.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" for="{{ password_form.confirm_password.id_for_label }}">
+                                {{ password_form.confirm_password.label }}
+                            </label>
+                            {{ password_form.confirm_password }}
+                            {% if password_form.confirm_password.errors %}
+                            <div class="text-danger mt-1">
+                                {{ password_form.confirm_password.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <button class="btn btn-primary" type="submit">修改密码</button>
+                    </form>
+
+                    <hr class="my-4">
+
                     <div class="mb-3">
                         <label class="form-label">用户类型</label>
                         <input type="text" class="form-control" value="{{ user.get_user_type_display }}" readonly>

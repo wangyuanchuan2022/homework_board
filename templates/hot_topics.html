@@ -30,6 +30,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0; /* 防止序号被压缩 */
     }
     
     .topic-number.top1 {
@@ -50,6 +51,7 @@
     .like-btn {
         cursor: pointer;
         transition: all 0.2s ease;
+        flex-shrink: 0; /* 防止点赞按钮被压缩 */
     }
     
     .like-btn:hover {
@@ -90,6 +92,39 @@
     .actions-dropdown .btn {
         padding: 0.25rem 0.5rem;
         background: transparent;
+    }
+    
+    /* 新增样式，防止标题和内容过长 */
+    .topic-title {
+        max-width: calc(100% - 30px); /* 为按钮留出空间 */
+        word-break: break-word; /* 允许在任何字符处换行 */
+        flex-grow: 1;
+    }
+    
+    .topic-title h5 {
+        margin-bottom: 0;
+        word-break: break-word;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    
+    .topic-content {
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+    
+    .topic-meta {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .topic-user-info {
+        flex-shrink: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 </style>
 {% endblock %}
@@ -151,15 +186,17 @@
                                             {{ forloop.counter }}
                                         </div>
                                         <div class="flex-grow-1">
-                                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                                <h5 class="mb-0">
-                                                    {% if topic.is_pinned %}
+                                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                                <div class="topic-title">
+                                                    <h5>
+                                                        {% if topic.is_pinned %}
                                                         <span class="badge bg-danger me-1">置顶</span>
-                                                    {% endif %}
-                                                    {{ topic.title }}
-                                                </h5>
+                                                        {% endif %}
+                                                        <span>{{ topic.title }}</span>
+                                                    </h5>
+                                                </div>
                                                 {% if request.user == topic.author or request.user.user_type == 'admin' %}
-                                                <div class="dropdown actions-dropdown">
+                                                <div class="dropdown actions-dropdown ms-2">
                                                     <button class="btn btn-sm btn-link text-muted" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                                         <i class="bi bi-three-dots-vertical"></i>
                                                     </button>
@@ -184,11 +221,12 @@
                                                 {% endif %}
                                             </div>
                                             {% if topic.content %}
-                                                <p class="mb-2">{{ topic.content }}</p>
+                                            <p class="mb-2 topic-content">{{ topic.content }}</p>
                                             {% endif %}
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div class="d-flex align-items-center">
-                                                    <small class="text-muted me-3">{{ topic.author.username }} · {{ topic.created_at|date:"Y-m-d H:i" }}</small>
+                                            <div class="d-flex justify-content-between align-items-center topic-meta">
+                                                <div class="d-flex align-items-center flex-wrap gap-2">
+                                                    <small class="text-muted topic-user-info">{{ topic.author.username
+                                                        }} · {{ topic.created_at|date:"Y-m-d H:i" }}</small>
                                                     <small class="heat-badge">
                                                         <i class="bi bi-graph-up me-1"></i>热度 {{ heat_score|floatformat:1 }}
                                                     </small>
