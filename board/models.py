@@ -1,9 +1,11 @@
-from django.db import models
-from django.contrib.auth.models import AbstractUser
-from django.db.models.signals import post_migrate
-from django.dispatch import receiver
 import math
 from datetime import datetime
+
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+from django.db.models.signals import post_migrate
+from django.dispatch import receiver
+
 
 class User(AbstractUser):
     USER_TYPE_CHOICES = (
@@ -78,6 +80,7 @@ class HotTopic(models.Model):
     content = models.TextField(verbose_name="内容", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     is_pinned = models.BooleanField(default=False, verbose_name="是否置顶")
+    is_anonymous = models.BooleanField(default=False, verbose_name="是否匿名")
     
     class Meta:
         ordering = ['-is_pinned', '-created_at']

@@ -459,8 +459,37 @@ def get_next_available_assignment_id():
         # 如果没有空缺ID，则返回最大ID+1
         return max_id + 1
 
-@user_type_required(['teacher'])
+
+@user_type_required(['teacher', 'admin'])
 def create_assignment(request):
+    # 获取当前教师最近的一个作业作为默认值参考
+    default_subject = None
+    last_assignment = Assignment.objects.filter(teacher=request.user).order_by('-created_at').first()
+    if last_assignment:
+        default_subject = last_assignment.subject
+
+    # 获取当前日期并计算默认的开始和结束日期
+    today = datetime.date.today()
+    default_start_date = today
+    default_end_date = today + datetime.timedelta(days=1)  # 默认为第二天
+
+    # 判断今天是周几（0是周一，6是周日）
+    today_weekday = today.weekday()
+
+    # 如果今天是周五、周六或周日，设置特殊的默认日期
+    if today_weekday == 4:  # 周五
+        # 默认开始日期为今天（周五），结束日期为下周一
+        default_start_date = today
+        default_end_date = today + datetime.timedelta(days=3)
+    elif today_weekday == 5:  # 周六
+        # 默认开始日期为昨天（周五），结束日期为下周一
+        default_start_date = today - datetime.timedelta(days=1)  # 昨天=周五
+        default_end_date = today + datetime.timedelta(days=2)
+    elif today_weekday == 6:  # 周日
+        # 默认开始日期为前天（周五），结束日期为下周一
+        default_start_date = today - datetime.timedelta(days=2)  # 前天=周五
+        default_end_date = today + datetime.timedelta(days=1)
+
     if request.method == 'POST':
         # 检查是否是批量提交
         if 'batch_submit' in request.POST:
@@ -536,8 +565,17 @@ def create_assignment(request):
                 
                 return redirect('teacher_dashboard')
     else:
-        form = AssignmentForm()
-        batch_form = BatchAssignmentForm()
+        # 创建带有默认值的表单
+        form = AssignmentForm(initial={
+            'subject': default_subject.id if default_subject else None,
+            'start_date': default_start_date,
+            'end_date': default_end_date
+        })
+        batch_form = BatchAssignmentForm(initial={
+            'subject': default_subject.id if default_subject else None,
+            'start_date': default_start_date,
+            'end_date': default_end_date
+        })
     
     # 获取该教师过去布置的作业题目
     # 按频率排序，取最多5个最常用的作业标题
@@ -756,7 +794,8 @@ def delete_user(request):
     
     return JsonResponse({'success': False, 'message': '方法不允许'}, status=405)
 
-@user_type_required(['admin'])
+
+@user_type_required(['admin', 'teacher'])
 def delete_assignment(request):
     """API: 删除作业"""
     if request.method == 'POST':
@@ -766,13 +805,18 @@ def delete_assignment(request):
             
             if not assignment_id:
                 return JsonResponse({'success': False, 'message': '缺少作业ID'})
+
+            # 管理员可以删除任何作业，教师只能删除自己的作业
+            if request.user.user_type == 'admin':
+                assignment = Assignment.objects.get(id=assignment_id)
+            else:
+                assignment = Assignment.objects.get(id=assignment_id, teacher=request.user)
                 
-            assignment = Assignment.objects.get(id=assignment_id)
             assignment.delete()
             
             return JsonResponse({'success': True})
         except Assignment.DoesNotExist:
-            return JsonResponse({'success': False, 'message': '作业不存在'})
+            return JsonResponse({'success': False, 'message': '作业不存在或无权删除'})
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)})
     
@@ -974,6 +1018,7 @@ def create_hot_topic(request):
     if request.method == 'POST':
         title = request.POST.get('title', '').strip()
         content = request.POST.get('content', '').strip()
+        is_anonymous = request.POST.get('is_anonymous') == 'true'
         
         if not title:
             return JsonResponse({'success': False, 'message': '标题不能为空'})
@@ -982,7 +1027,8 @@ def create_hot_topic(request):
         HotTopic.objects.create(
             title=title,
             content=content,
-            author=request.user
+            author=request.user,
+            is_anonymous=is_anonymous
         )
         
         return JsonResponse({'success': True})

@@ -33,6 +33,7 @@
                             {% csrf_token %}
                             <div class="mb-4">
                                 <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
+                                <small class="text-muted"> 请将作业的主要内容作为标题</small>
                                 <div class="input-group-glass">
                                     <span class="input-group-text"><i class="bi bi-pencil-square"></i></span>
                                     {{ form.title }}
@@ -208,7 +209,7 @@
                                 {% endif %}
                                 <div class="form-text format-guide mt-2">
                                     <i class="bi bi-info-circle me-1"></i>
-                                    每行输入一个作业，格式为"标题|描述"，例如：<br>
+                                    每行输入一个作业，格式为"标题|描述"请在标题中写入作业的主要内容，例如：<br>
                                     <code>练习册两页|完成练习册第15-16页练习</code><br>
                                     <code>日常积累|积累有关李白的内容</code>
                                 </div>
@@ -410,9 +411,23 @@
         console.log('单个作业科目选择器:', subjectSelect ? '找到' : '未找到');
         console.log('批量作业科目选择器:', batchSubjectSelect ? '找到' : '未找到');
         
-        // 从localStorage读取之前选择的科目
-        const lastSelectedSubject = localStorage.getItem('lastSelectedSubject');
-        console.log('上次选择的科目ID:', lastSelectedSubject);
+        // 记录后端设置的默认值
+        const backendDefaultSubject = subjectSelect ? subjectSelect.value : null;
+        console.log('后端设置的默认科目ID:', backendDefaultSubject);
+        
+        // 检查后端设置的默认日期
+        const startDateInput = document.getElementById('{{ form.start_date.id_for_label }}');
+        const endDateInput = document.getElementById('{{ form.end_date.id_for_label }}');
+        const batchStartDateInput = document.getElementById('{{ batch_form.start_date.id_for_label }}');
+        const batchEndDateInput = document.getElementById('{{ batch_form.end_date.id_for_label }}');
+        
+        console.log('后端设置的默认开始日期:', startDateInput ? startDateInput.value : '未找到');
+        console.log('后端设置的默认结束日期:', endDateInput ? endDateInput.value : '未找到');
+        
+        // 从localStorage读取之前选择的科目（现在优先使用后端设置的值）
+        const savedSubject = localStorage.getItem('lastSelectedSubject');
+        const lastSelectedSubject = backendDefaultSubject || savedSubject;
+        console.log('最终使用的科目ID:', lastSelectedSubject);
         
         // 选项卡元素
         const batchTab = document.getElementById('batch-tab');
@@ -481,18 +496,18 @@
         
         // 设置所有表单的默认值
         function initializeFormValues() {
-            if (!lastSelectedSubject) return;
-            
-            // 设置单个作业表单的默认科目
-            if (subjectSelect && subjectSelect.querySelector(`option[value="${lastSelectedSubject}"]`)) {
-                console.log('设置单个作业表单的默认科目:', lastSelectedSubject);
-                forceUpdateSelectUI(subjectSelect, lastSelectedSubject);
-            }
-            
-            // 设置批量作业表单的默认科目
-            if (batchSubjectSelect && batchSubjectSelect.querySelector(`option[value="${lastSelectedSubject}"]`)) {
-                console.log('设置批量作业表单的默认科目:', lastSelectedSubject);
-                forceUpdateSelectUI(batchSubjectSelect, lastSelectedSubject);
+            // 注意：现在我们不再主动设置科目，因为后端已经设置了默认值
+            // 我们只在后端没有设置值时使用localStorage中的值
+            if (!backendDefaultSubject && lastSelectedSubject) {
+                if (subjectSelect && subjectSelect.querySelector(`option[value="${lastSelectedSubject}"]`)) {
+                    console.log('从localStorage设置单个作业表单的默认科目:', lastSelectedSubject);
+                    forceUpdateSelectUI(subjectSelect, lastSelectedSubject);
+                }
+                
+                if (batchSubjectSelect && batchSubjectSelect.querySelector(`option[value="${lastSelectedSubject}"]`)) {
+                    console.log('从localStorage设置批量作业表单的默认科目:', lastSelectedSubject);
+                    forceUpdateSelectUI(batchSubjectSelect, lastSelectedSubject);
+                }
             }
         }
         
@@ -506,16 +521,9 @@
                 console.log('手动激活批量作业选项卡...');
                 manuallyActivateTab(batchTab, batchTabContent);
                 
-                // 重新确保批量作业表单的默认值设置正确
-                if (lastSelectedSubject && batchSubjectSelect) {
-                    setTimeout(() => {
-                        forceUpdateSelectUI(batchSubjectSelect, lastSelectedSubject);
-                        
-                        // 更新批量作业表单的科目推荐
-                        if (batchSubjectSelect.value) {
-                            updateSubjectSuggestions(batchSubjectSelect.value, 'batch');
-                        }
-                    }, 200);
+                // 更新批量作业表单的科目推荐
+                if (batchSubjectSelect && batchSubjectSelect.value) {
+                    updateSubjectSuggestions(batchSubjectSelect.value, 'batch');
                 }
             } else if (singleTab && singleTabContent) {
                 console.log('手动激活单个作业选项卡...');
@@ -549,15 +557,9 @@
                 localStorage.setItem('lastSelectedTab', 'batch');
                 
                 // 确保批量作业表单的默认值设置正确
-                if (lastSelectedSubject && batchSubjectSelect) {
-                    setTimeout(() => {
-                        forceUpdateSelectUI(batchSubjectSelect, lastSelectedSubject);
-                        
-                        // 更新批量作业表单的科目推荐
-                        if (batchSubjectSelect.value) {
-                            updateSubjectSuggestions(batchSubjectSelect.value, 'batch');
-                        }
-                    }, 100);
+                if (batchSubjectSelect && batchSubjectSelect.value) {
+                    // 更新批量作业表单的科目推荐
+                    updateSubjectSuggestions(batchSubjectSelect.value, 'batch');
                 }
             });
         }
@@ -636,6 +638,30 @@
                 }, 500);
             });
         });
+        
+        // 添加表单提交前的处理
+        const batchForm = document.querySelector('#batch form');
+        if (batchForm) {
+            batchForm.addEventListener('submit', function(e) {
+                const assignmentsText = batchAssignmentsTextarea.value.trim();
+                if (!assignmentsText) return true;  // 如果为空，让表单正常提交
+
+                // 处理每一行
+                const lines = assignmentsText.split('\n');
+                const processedLines = lines.map(line => {
+                    const parts = line.split('|');
+                    if (parts.length === 1 || (parts.length === 2 && !parts[1].trim())) {
+                        // 如果只有标题或描述为空，添加"暂无"作为描述
+                        return parts[0].trim() + '|暂无';
+                    }
+                    return line;
+                });
+
+                // 更新文本框的值
+                batchAssignmentsTextarea.value = processedLines.join('\n');
+                return true;  // 允许表单提交
+            });
+        }
         
         // 学科变化 - 需要使用AJAX动态获取该学科的常用作业
         function updateSubjectSuggestions(subjectId, mode) {

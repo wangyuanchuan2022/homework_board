@@ -64,9 +64,14 @@
                     <a href="{% url 'assignment_detail' assignment.id %}" class="btn btn-sm btn-outline-primary flex-grow-1 me-1 btn-icon">
                         <i class="bi bi-eye me-1"></i> 查看详情
                     </a>
-                    <a href="{% url 'edit_assignment' assignment.id %}" class="btn btn-sm btn-outline-secondary flex-grow-1 ms-1 btn-icon">
+                    <a class="btn btn-sm btn-outline-secondary flex-grow-1 mx-1 btn-icon"
+                       href="{% url 'edit_assignment' assignment.id %}">
                         <i class="bi bi-pencil me-1"></i> 编辑
                     </a>
+                    <button class="btn btn-sm btn-outline-danger flex-grow-1 ms-1 btn-icon delete-assignment"
+                            data-id="{{ assignment.id }}">
+                        <i class="bi bi-trash me-1"></i> 删除
+                    </button>
                 </div>
             </div>
         </div>
@@ -82,4 +87,60 @@
     <p class="text-muted">点击上方的"布置新作业"按钮开始创建作业</p>
 </div>{% endif %}
 </div></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 删除作业功能
+        const deleteAssignmentBtns = document.querySelectorAll('.delete-assignment');
+        deleteAssignmentBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const assignmentId = this.dataset.id;
+                
+                if (confirm('确定要删除此作业吗？此操作不可恢复！')) {
+                    // 显示加载状态
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+                    this.disabled = true;
+                    
+                    fetch('/api/delete-assignment/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({
+                            assignment_id: assignmentId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // 创建动画效果，然后刷新页面
+                            const card = this.closest('.assignment-card');
+                            card.style.transition = 'all 0.3s ease';
+                            card.style.opacity = '0';
+                            card.style.transform = 'translateX(20px)';
+                            
+                            setTimeout(() => {
+                                location.reload();
+                            }, 300);
+                        } else {
+                            alert(data.message || '删除失败');
+                            this.innerHTML = originalText;
+                            this.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('操作失败，请重试');
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                    });
+                }
+            });
+        });
+    });
+</script>
 {% endblock %} 

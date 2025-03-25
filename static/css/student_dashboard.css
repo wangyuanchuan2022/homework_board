@@ -16,7 +16,7 @@
     }
 
     .calendar-day:hover {
-        background-color: rgba(var(--bs-primary-rgb), 0.1);
+        background-color: var(--primary-color-light);
         transform: scale(1.1);
     }
 
@@ -50,7 +50,7 @@
     /* 作业日期范围标注 */
     .assignment-range::before {
         content: '';
-        background-color: rgba(var(--bs-primary-rgb), 0.2);
+        background-color: var(--primary-color-light);
         position: absolute;
         top: 0;
         left: 0;
@@ -236,7 +236,7 @@
     .calendar-container {
         overflow: hidden;
         border-radius: var(--radius-md);
-        background-color: rgba(255, 255, 255, 0.8);
+        background-color: rgba(255, 255, 255, 0.7);
         box-shadow: var(--shadow-sm);
         border: none;
     }
@@ -332,3 +332,13 @@
         border: none;
         background-color: transparent;
     }
+
+    .bg-warning-subtle {
+        background-color: #ffe7116d !important;
+    }
+
+    .bg-warning-subtle:hover {
+        background-color: #ffe7116d !important;
+    }
+    
+    

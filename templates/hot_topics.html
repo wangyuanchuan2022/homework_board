@@ -159,6 +159,11 @@
                             <label for="topicContent" class="form-label">内容 (可选)</label>
                             <textarea class="form-control" id="topicContent" name="content" rows="3" placeholder="输入热搜详细内容"></textarea>
                         </div>
+                        <div class="mb-3 form-check">
+                            <input class="form-check-input" id="isAnonymous" name="is_anonymous" type="checkbox">
+                            <label class="form-check-label" for="isAnonymous">匿名发布</label>
+                            <small class="form-text text-muted d-block">选择匿名后，其他用户将看不到您是谁</small>
+                        </div>
                         <div class="d-grid">
                             <button type="submit" class="btn btn-danger">
                                 <i class="bi bi-plus-circle me-1"></i>发布热搜
@@ -225,8 +230,14 @@
                                             {% endif %}
                                             <div class="d-flex justify-content-between align-items-center topic-meta">
                                                 <div class="d-flex align-items-center flex-wrap gap-2">
-                                                    <small class="text-muted topic-user-info">{{ topic.author.username
-                                                        }} · {{ topic.created_at|date:"Y-m-d H:i" }}</small>
+                                                    <small class="text-muted topic-user-info">
+                                                        {% if topic.is_anonymous %}
+                                                        匿名人士 · {{ topic.created_at|date:"Y-m-d H:i" }}
+                                                        {% else %}
+                                                        {{ topic.author.username }} · {{ topic.created_at|date:"Y-m-d
+                                                        H:i" }}
+                                                        {% endif %}
+                                                    </small>
                                                     <small class="heat-badge">
                                                         <i class="bi bi-graph-up me-1"></i>热度 {{ heat_score|floatformat:1 }}
                                                     </small>
@@ -275,6 +286,7 @@
                 
                 const title = document.getElementById('topicTitle').value.trim();
                 const content = document.getElementById('topicContent').value.trim();
+                const isAnonymous = document.getElementById('isAnonymous').checked;
                 
                 if (!title) {
                     showToast('标题不能为空');
@@ -290,7 +302,8 @@
                     },
                     body: new URLSearchParams({
                         'title': title,
-                        'content': content
+                        'content': content,
+                        'is_anonymous': isAnonymous
                     })
                 })
                 .then(response => response.json())
