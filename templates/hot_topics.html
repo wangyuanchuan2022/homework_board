@@ -49,17 +49,27 @@
     }
     
     .like-btn {
+        padding: 6px 12px;
+        border-radius: 20px;
         cursor: pointer;
+        user-select: none;
         transition: all 0.2s ease;
-        flex-shrink: 0; /* 防止点赞按钮被压缩 */
+        display: inline-flex;
+        align-items: center;
+        background-color: rgba(0,0,0,0.03);
     }
     
     .like-btn:hover {
-        transform: scale(1.1);
+        transform: scale(1.05);
+        background-color: rgba(0,0,0,0.08);
     }
     
     .like-btn.liked {
         color: #dc3545;
+    }
+    
+    .like-btn.liked:hover {
+        background-color: rgba(220, 53, 69, 0.1);
     }
     
     .heat-badge {
@@ -154,6 +164,20 @@
     .page-nav:hover {
         background-color: rgba(var(--primary-rgb), 0.1);
         transform: translateY(-2px);
+    }
+    
+    .hot-topics-container {
+        margin-top: 20px;
+    }
+    
+    /* 添加点赞按钮加载动画 */
+    .spin-animation {
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
 </style>
 {% endblock %}
@@ -263,8 +287,7 @@
                                                         {% if topic.is_anonymous %}
                                                         匿名人士 · {{ topic.created_at|date:"Y-m-d H:i" }}
                                                         {% else %}
-                                                        {{ topic.author.username }} · {{ topic.created_at|date:"Y-m-d
-                                                        H:i" }}
+                                                        {{ topic.author.username }} · {{ topic.created_at|date:"Y-m-d H:i" }}
                                                         {% endif %}
                                                     </small>
                                                     <small class="heat-badge">
@@ -323,8 +346,7 @@
                                                 <i class="bi bi-three-dots-vertical"></i>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end">
-                                                {% if request.user == topic.author or request.user.user_type == 'admin'
-                                                %}
+                                                {% if request.user == topic.author or request.user.user_type == 'admin' %}
                                                 <li>
                                                     <a class="dropdown-item delete-topic" data-id="{{ topic.id }}"
                                                        href="javascript:void(0);">
@@ -571,12 +593,36 @@
             }
         }
         
+        // 点赞操作状态标志
+        let isLikePending = false;
+        
         // 绑定点赞按钮事件
         function bindLikeButtons() {
             const likeButtons = document.querySelectorAll('.like-btn');
             likeButtons.forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', function(e) {
+                    // 防止重复点击
+                    if (isLikePending) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return false;
+                    }
+                    
+                    // 设置标志
+                    isLikePending = true;
+                    
+                    // 禁用样式
+                    this.style.opacity = '0.6';
+                    this.style.pointerEvents = 'none';
+                    
                     const topicId = this.getAttribute('data-id');
+                    const likeIcon = this.querySelector('i');
+                    const likesCount = this.querySelector('.likes-count');
+                    const originalIcon = likeIcon.className;
+                    const originalCount = likesCount.textContent;
+                    
+                    // 显示加载状态
+                    likeIcon.className = 'bi bi-arrow-repeat spin-animation me-1';
                     
                     // 发送点赞请求
                     fetch('{% url "toggle_hot_topic_like" %}', {
@@ -589,32 +635,45 @@
                             'topic_id': topicId
                         })
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('服务器响应异常: ' + response.status);
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.success) {
                             // 更新点赞状态和数量
-                            const likeIcon = this.querySelector('i');
-                            const likesCount = this.querySelector('.likes-count');
-                            
                             if (data.action === 'liked') {
-                                likeIcon.classList.remove('bi-heart');
-                                likeIcon.classList.add('bi-heart-fill');
+                                likeIcon.className = 'bi bi-heart-fill me-1';
                                 this.classList.add('liked');
                             } else {
-                                likeIcon.classList.remove('bi-heart-fill');
-                                likeIcon.classList.add('bi-heart');
+                                likeIcon.className = 'bi bi-heart me-1';
                                 this.classList.remove('liked');
                             }
                             
                             likesCount.textContent = data.likes_count;
                             showToast(data.message);
                         } else {
+                            // 恢复原状
+                            likeIcon.className = originalIcon;
+                            likesCount.textContent = originalCount;
                             showToast(data.message || '操作失败，请重试');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        showToast('发生错误，请重试');
+                        // 恢复原状
+                        likeIcon.className = originalIcon;
+                        likesCount.textContent = originalCount;
+                        showToast('操作失败: ' + error.message);
+                    })
+                    .finally(() => {
+                        // 恢复按钮状态
+                        this.style.opacity = '';
+                        this.style.pointerEvents = '';
+                        // 重置标志
+                        isLikePending = false;
                     });
                 });
             });
