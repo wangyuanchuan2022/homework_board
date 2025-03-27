@@ -1,149 +1,149 @@
 .btn-with-icon {
-        display: inline-flex;
-        align-items: center;
-        transition: all var(--transition-speed) cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
+    display: inline-flex;
+    align-items: center;
+    transition: all var(--transition-speed) cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 
-    .btn-with-icon i {
-        margin-right: 0.5rem;
-        font-size: 1.1em;
-    }
+.btn-with-icon i {
+    margin-right: 0.5rem;
+    font-size: 1.1em;
+}
 
-    .btn-with-icon:hover {
-        transform: translateY(-2px);
-    }
+.btn-with-icon:hover {
+    transform: translateY(-2px);
+}
 
-    .detail-card, .completion-card {
-        border-radius: var(--radius-md);
-        overflow: hidden;
-        transition: all var(--transition-speed) ease;
-    }
+.detail-card, .completion-card {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: all var(--transition-speed) ease;
+}
 
-    .detail-card:hover, .completion-card:hover {
-        transform: translateY(-5px);
-    }
+.detail-card:hover, .completion-card:hover {
+    transform: translateY(-5px);
+}
 
-    .detail-item {
-        background-color: rgba(0, 49, 82, 0.02);
-        padding: 1rem;
-        border-radius: var(--radius-sm);
-        transition: all var(--transition-speed) ease;
-    }
+.detail-item {
+    background-color: rgba(0, 49, 82, 0.02);
+    padding: 1rem;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-speed) ease;
+}
 
-    .detail-item:hover {
-        background-color: rgba(0, 49, 82, 0.05);
-    }
+.detail-item:hover {
+    background-color: rgba(0, 49, 82, 0.05);
+}
 
-    .detail-label {
-        color: var(--text-secondary);
-        font-weight: 500;
-        margin-bottom: 0.25rem;
-        display: flex;
-        align-items: center;
-    }
+.detail-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+}
 
-    .detail-value {
-        color: var(--text-primary);
-        font-size: 1.1rem;
-    }
+.detail-value {
+    color: var(--text-primary);
+    font-size: 1.1rem;
+}
 
-    .description-item {
-        min-height: 100px;
-    }
+.description-item {
+    min-height: 100px;
+}
 
-    .description-item .detail-value {
-        font-size: 1rem;
-        line-height: 1.6;
-    }
+.description-item .detail-value {
+    font-size: 1rem;
+    line-height: 1.6;
+}
 
-    .completion-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
+.completion-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
 
-    .completion-item {
-        padding: 0.75rem;
-        border-radius: var(--radius-sm);
-        background-color: rgba(255, 255, 255, 0.7);
-        border: 1px solid rgba(0, 49, 82, 0.08);
-        transition: all var(--transition-speed) ease;
-    }
+.completion-item {
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    background-color: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 49, 82, 0.08);
+    transition: all var(--transition-speed) ease;
+}
 
-    .completion-item:hover {
-        transform: translateX(5px);
-        background-color: rgba(255, 255, 255, 0.9);
-        box-shadow: var(--shadow-sm);
-    }
+.completion-item:hover {
+    transform: translateX(5px);
+    background-color: rgba(255, 255, 255, 0.9);
+    box-shadow: var(--shadow-sm);
+}
 
-    .student-name {
-        font-weight: 500;
-    }
+.student-name {
+    font-weight: 500;
+}
 
-    .student-id {
-        color: var(--text-secondary);
-        margin-left: 0.5rem;
-    }
+.student-id {
+    color: var(--text-secondary);
+    margin-left: 0.5rem;
+}
 
-    .status-badge {
-        padding: 0.35rem 0.65rem;
-        border-radius: 20px;
-        font-size: 0.875rem;
-        font-weight: 500;
-        display: inline-flex;
-        align-items: center;
-    }
+.status-badge {
+    padding: 0.35rem 0.65rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+}
 
-    .status-complete {
-        background-color: rgba(25, 135, 84, 0.1);
-        color: #198754;
-    }
+.status-complete {
+    background-color: rgba(25, 135, 84, 0.1);
+    color: #198754;
+}
 
-    .status-incomplete {
-        background-color: rgba(220, 53, 69, 0.1);
-        color: #dc3545;
-    }
+.status-incomplete {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
 
-    .glass-alert {
-        background-color: rgba(13, 202, 240, 0.1);
-        backdrop-filter: blur(var(--glass-blur));
-        -webkit-backdrop-filter: blur(var(--glass-blur));
-        border: 1px solid rgba(13, 202, 240, 0.2);
-    }
+.glass-alert {
+    background-color: rgba(13, 202, 240, 0.1);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid rgba(13, 202, 240, 0.2);
+}
 
-    .completion-stats {
-        display: flex;
-        align-items: center;
-    }
+.completion-stats {
+    display: flex;
+    align-items: center;
+}
 
-    .completion-pie {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: conic-gradient(
+.completion-pie {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: conic-gradient(
             var(--primary-color) 0%,
             var(--primary-color) calc(var(--percentage) / var(--total) * 100%),
             rgba(0, 49, 82, 0.1) calc(var(--percentage) / var(--total) * 100%),
             rgba(0, 49, 82, 0.1) 100%
-        );
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+    );
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-    .completion-pie-inner {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        background-color: var(--card-bg);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+.completion-pie-inner {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: var(--card-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-    .completion-pie-value {
-        font-size: 0.7rem;
-        font-weight: 600;
-        color: var(--primary-color);
-    }
+.completion-pie-value {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}

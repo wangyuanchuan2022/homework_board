@@ -20,7 +20,11 @@
                 </div>
             </td>
             <td><span class="badge subject-badge">{{ assignment.subject.name }}</span></td>
-            <td>{{ assignment.teacher.username }}</td>
+            <td>
+                <div class="text-truncate teacher-name" title="{{ assignment.teacher.username }}">
+                    {{ assignment.teacher.username }}
+                </div>
+            </td>
             <td>{{ assignment.end_date|date:"Y-m-d" }}</td>
             <td>
                 {% if assignment.total_count > 0 %}

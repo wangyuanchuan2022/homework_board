@@ -1,109 +1,106 @@
-ow: 0 15px 35px rgba(0, 0, 0, 0.1), 0 5px 15px rgba(0, 0, 0, 0.05);
-    }
+.login-card .card-header {
+    position: relative;
+    overflow: hidden;
+}
 
-    .login-card .card-header {
-        position: relative;
-        overflow: hidden;
-    }
+.input-group-glass .input-group-text {
+    background-color: rgba(26, 58, 95, 0.05);
+    border-color: rgba(26, 58, 95, 0.1);
+    color: var(--primary-color);
+    border-right: none;
+}
 
-    .input-group-glass .input-group-text {
-        background-color: rgba(26, 58, 95, 0.05);
-        border-color: rgba(26, 58, 95, 0.1);
-        color: var(--primary-color);
-        border-right: none;
-    }
+.glass-alert-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: none;
+    box-shadow: 0 0 0 1px rgba(220, 53, 69, 0.2);
+    color: #b02a37;
+    border-radius: var(--radius-md);
+}
 
-    .glass-alert-danger {
-        background-color: rgba(220, 53, 69, 0.1);
-        backdrop-filter: blur(var(--glass-blur));
-        -webkit-backdrop-filter: blur(var(--glass-blur));
-        border: none;
-        box-shadow: 0 0 0 1px rgba(220, 53, 69, 0.2);
-        color: #b02a37;
-        border-radius: var(--radius-md);
-    }
+.form-control {
+    height: 48px;
+    font-size: 1rem;
+    border-left: none;
+    background-color: rgba(255, 255, 255, 0.8);
+}
 
-    .form-control {
-        height: 48px;
-        font-size: 1rem;
-        border-left: none;
-        background-color: rgba(255, 255, 255, 0.8);
-    }
+.form-control:focus {
+    border-color: rgba(26, 58, 95, 0.2);
+    border-left: none;
+    background-color: rgba(255, 255, 255, 0.95);
+}
 
-    .form-control:focus {
-        border-color: rgba(26, 58, 95, 0.2);
-        border-left: none;
-        background-color: rgba(255, 255, 255, 0.95);
-    }
+.input-group-glass:focus-within .input-group-text {
+    border-color: rgba(26, 58, 95, 0.2);
+    border-right: none;
+}
 
-    .input-group-glass:focus-within .input-group-text {
-        border-color: rgba(26, 58, 95, 0.2);
-        border-right: none;
-    }
+.toggle-password {
+    border-color: rgba(26, 58, 95, 0.1);
+    border-left: none;
+    color: var(--text-secondary);
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 5;
+}
 
-    .toggle-password {
-        border-color: rgba(26, 58, 95, 0.1);
-        border-left: none;
-        color: var(--text-secondary);
-        background-color: rgba(255, 255, 255, 0.8);
-        z-index: 5;
-    }
+.toggle-password:hover {
+    background-color: rgba(26, 58, 95, 0.05);
+    color: var(--primary-color);
+    border-color: rgba(26, 58, 95, 0.2);
+    border-left: none;
+}
 
-    .toggle-password:hover {
-        background-color: rgba(26, 58, 95, 0.05);
-        color: var(--primary-color);
-        border-color: rgba(26, 58, 95, 0.2);
-        border-left: none;
-    }
+.login-btn {
+    height: 50px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
 
-    .login-btn {
-        height: 50px;
-        font-size: 1.1rem;
-        font-weight: 500;
-        position: relative;
-        overflow: hidden;
-        transition: all 0.3s ease;
-    }
+.login-btn:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: all 0.5s;
+}
 
-    .login-btn:before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        transition: all 0.5s;
-    }
+.login-btn:hover:before {
+    left: 100%;
+}
 
-    .login-btn:hover:before {
-        left: 100%;
-    }
+.link-primary {
+    color: var(--primary-color);
+    text-decoration: none;
+    position: relative;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
 
-    .link-primary {
-        color: var(--primary-color);
-        text-decoration: none;
-        position: relative;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
+.link-primary::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: -2px;
+    left: 0;
+    background-color: var(--primary-color);
+    transition: width var(--transition-speed) ease;
+}
 
-    .link-primary::after {
-        content: '';
-        position: absolute;
-        width: 0;
-        height: 2px;
-        bottom: -2px;
-        left: 0;
-        background-color: var(--primary-color);
-        transition: width var(--transition-speed) ease;
-    }
+.link-primary:hover {
+    color: var(--accent-color);
+}
 
-    .link-primary:hover {
-        color: var(--accent-color);
-    }
-
-    .link-primary:hover::after {
-        width: 100%;
-        background-color: var(--accent-color);
-    }
+.link-primary:hover::after {
+    width: 100%;
+    background-color: var(--accent-color);
+}
