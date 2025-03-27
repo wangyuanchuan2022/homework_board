@@ -1,0 +1,115 @@
+<!-- 作业表格 -->
+<div class="table-responsive">
+    <table class="table table-hover custom-table">
+        <thead>
+        <tr>
+            <th>标题</th>
+            <th>科目</th>
+            <th>教师</th>
+            <th>截止日期</th>
+            <th>完成比例</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for assignment in assignments %}
+        <tr>
+            <td>
+                <div class="text-truncate assignment-title" title="{{ assignment.title }}">
+                    {{ assignment.title }}
+                </div>
+            </td>
+            <td><span class="badge subject-badge">{{ assignment.subject.name }}</span></td>
+            <td>{{ assignment.teacher.username }}</td>
+            <td>{{ assignment.end_date|date:"Y-m-d" }}</td>
+            <td>
+                {% if assignment.total_count > 0 %}
+                <div class="completion-wrapper">
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar" role="progressbar"
+                             style="width: {{ assignment.completion_percentage }}%"></div>
+                    </div>
+                    <div class="completion-text">
+                        {{ assignment.completed_count }}/{{ assignment.total_count }}
+                        ({{ assignment.completion_percentage }}%)
+                    </div>
+                </div>
+                {% else %}
+                <span class="badge no-data-badge">0/0 (0%)</span>
+                {% endif %}
+            </td>
+            <td>
+                <div class="d-flex gap-2">
+                    <a class="btn btn-sm btn-primary btn-icon" href="{% url 'assignment_detail' pk=assignment.id %}">
+                        <i class="bi bi-eye me-1"></i> 查看
+                    </a>
+                    <a class="btn btn-sm btn-primary btn-icon" href="{% url 'edit_assignment' pk=assignment.id %}">
+                        <i class="bi bi-pencil me-1"></i> 编辑
+                    </a>
+                    <button class="btn btn-sm btn-danger btn-icon delete-assignment" data-id="{{ assignment.id }}">
+                        <i class="bi bi-trash me-1"></i> 删除
+                    </button>
+                </div>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td class="text-center empty-data" colspan="6">
+                <div class="empty-icon-container mb-2">
+                    <i class="bi bi-journal-x"></i>
+                </div>
+                <p>暂无作业</p>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- 作业分页控件 -->
+{% if assignments.has_other_pages %}
+<div class="pagination-container mt-3">
+    <nav aria-label="作业列表分页">
+        <ul class="pagination justify-content-center">
+            {% if assignments.has_previous %}
+            <li class="page-item">
+                <a aria-label="上一页" class="page-link assignment-page-nav"
+                   data-page="{{ assignments.previous_page_number }}" href="javascript:void(0);">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span aria-hidden="true" class="page-link">&laquo;</span>
+            </li>
+            {% endif %}
+
+            {% for i in assignments.paginator.page_range %}
+            {% if assignments.number == i %}
+            <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+            {% else %}
+            <li class="page-item">
+                <a class="page-link assignment-page-nav" data-page="{{ i }}" href="javascript:void(0);">{{ i }}</a>
+            </li>
+            {% endif %}
+            {% endfor %}
+
+            {% if assignments.has_next %}
+            <li class="page-item">
+                <a aria-label="下一页" class="page-link assignment-page-nav"
+                   data-page="{{ assignments.next_page_number }}" href="javascript:void(0);">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span aria-hidden="true" class="page-link">&raquo;</span>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="text-center text-muted small">
+        显示第 {{ assignments.start_index }} 至 {{ assignments.end_index }} 条，共 {{ total_assignments }} 条记录
+    </div>
+</div>
+{% endif %} 

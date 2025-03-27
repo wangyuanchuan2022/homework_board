@@ -1,0 +1,94 @@
+<!-- 学生表格 -->
+<div class="table-responsive">
+    <table class="table table-hover custom-table">
+        <thead>
+        <tr>
+            <th>用户名</th>
+            <th>注册时间</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for student in students %}
+        <tr>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="avatar avatar-sm bg-light me-2">
+                        <i class="bi bi-person"></i>
+                    </div>
+                    <div>
+                        {{ student.username }}
+                        {% if student.student_id %}
+                        <small class="text-muted d-block">(学号: {{ student.student_id }})</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </td>
+            <td>{{ student.date_joined|date:"Y-m-d H:i" }}</td>
+            <td>
+                <button class="btn btn-sm btn-danger btn-icon delete-user" data-id="{{ student.id }}">
+                    <i class="bi bi-trash me-1"></i> 删除
+                </button>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td class="text-center empty-data" colspan="3">
+                <div class="empty-icon-container mb-2">
+                    <i class="bi bi-person-slash"></i>
+                </div>
+                <p>暂无学生账号</p>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- 学生分页控件 -->
+{% if students.has_other_pages %}
+<div class="pagination-container mt-3">
+    <nav aria-label="学生列表分页">
+        <ul class="pagination justify-content-center">
+            {% if students.has_previous %}
+            <li class="page-item">
+                <a aria-label="上一页" class="page-link student-page-nav"
+                   data-page="{{ students.previous_page_number }}" href="javascript:void(0);">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span aria-hidden="true" class="page-link">&laquo;</span>
+            </li>
+            {% endif %}
+
+            {% for i in students.paginator.page_range %}
+            {% if students.number == i %}
+            <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+            {% else %}
+            <li class="page-item">
+                <a class="page-link student-page-nav" data-page="{{ i }}" href="javascript:void(0);">{{ i }}</a>
+            </li>
+            {% endif %}
+            {% endfor %}
+
+            {% if students.has_next %}
+            <li class="page-item">
+                <a aria-label="下一页" class="page-link student-page-nav"
+                   data-page="{{ students.next_page_number }}" href="javascript:void(0);">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span aria-hidden="true" class="page-link">&raquo;</span>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="text-center text-muted small">
+        显示第 {{ students.start_index }} 至 {{ students.end_index }} 条，共 {{ total_students }} 条记录
+    </div>
+</div>
+{% endif %} 

@@ -1,0 +1,91 @@
+<!-- 教师表格 -->
+<div class="table-responsive">
+    <table class="table table-hover custom-table">
+        <thead>
+        <tr>
+            <th>用户名</th>
+            <th>注册时间</th>
+            <th>作业数量</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for teacher in teachers %}
+        <tr>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="avatar avatar-sm bg-light me-2">
+                        <i class="bi bi-person-workspace"></i>
+                    </div>
+                    <div>{{ teacher.username }}</div>
+                </div>
+            </td>
+            <td>{{ teacher.date_joined|date:"Y-m-d H:i" }}</td>
+            <td><span class="badge assignment-count">{{ teacher.assignments.count }}</span></td>
+            <td>
+                <button class="btn btn-sm btn-danger btn-icon delete-user" data-id="{{ teacher.id }}">
+                    <i class="bi bi-trash me-1"></i> 删除
+                </button>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td class="text-center empty-data" colspan="4">
+                <div class="empty-icon-container mb-2">
+                    <i class="bi bi-person-slash"></i>
+                </div>
+                <p>暂无教师账号</p>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- 教师分页控件 -->
+{% if teachers.has_other_pages %}
+<div class="pagination-container mt-3">
+    <nav aria-label="教师列表分页">
+        <ul class="pagination justify-content-center">
+            {% if teachers.has_previous %}
+            <li class="page-item">
+                <a aria-label="上一页" class="page-link teacher-page-nav"
+                   data-page="{{ teachers.previous_page_number }}" href="javascript:void(0);">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span aria-hidden="true" class="page-link">&laquo;</span>
+            </li>
+            {% endif %}
+
+            {% for i in teachers.paginator.page_range %}
+            {% if teachers.number == i %}
+            <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+            {% else %}
+            <li class="page-item">
+                <a class="page-link teacher-page-nav" data-page="{{ i }}" href="javascript:void(0);">{{ i }}</a>
+            </li>
+            {% endif %}
+            {% endfor %}
+
+            {% if teachers.has_next %}
+            <li class="page-item">
+                <a aria-label="下一页" class="page-link teacher-page-nav"
+                   data-page="{{ teachers.next_page_number }}" href="javascript:void(0);">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span aria-hidden="true" class="page-link">&raquo;</span>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="text-center text-muted small">
+        显示第 {{ teachers.start_index }} 至 {{ teachers.end_index }} 条，共 {{ total_teachers }} 条记录
+    </div>
+</div>
+{% endif %} 

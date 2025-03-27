@@ -88,188 +88,29 @@
 
                         <div class="tab-content">
                             <div class="tab-pane fade show active" id="students" role="tabpanel">
-                                <div class="table-responsive">
-                                    <table class="table table-hover custom-table">
-                                        <thead>
-                                            <tr>
-                                                <th>用户名</th>
-                                                <th>注册时间</th>
-                                                <th>操作</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for student in students %}
-                                            <tr>
-                                                <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="avatar avatar-sm bg-light me-2">
-                                                            <i class="bi bi-person"></i>
-                                                        </div>
-                                                        <div>
-                                                            {{ student.username }}
-                                                            {% if student.student_id %}
-                                                            <small class="text-muted d-block">(学号: {{ student.student_id }})</small>
-                                                            {% endif %}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td>{{ student.date_joined|date:"Y-m-d H:i" }}</td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-danger btn-icon delete-user" data-id="{{ student.id }}">
-                                                        <i class="bi bi-trash me-1"></i> 删除
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            {% empty %}
-                                            <tr>
-                                                <td colspan="3" class="text-center empty-data">
-                                                    <div class="empty-icon-container mb-2">
-                                                        <i class="bi bi-person-slash"></i>
-                                                    </div>
-                                                    <p>暂无学生账号</p>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                
-                                <!-- 学生分页控件 -->
-                                {% if students.has_other_pages %}
-                                <div class="pagination-container mt-3">
-                                    <nav aria-label="学生列表分页">
-                                        <ul class="pagination justify-content-center">
-                                            {% if students.has_previous %}
-                                            <li class="page-item">
-                                                <a class="page-link" href="?students_page={{ students.previous_page_number }}&teachers_page={{ teachers.number }}&admins_page={{ admins.number }}&assignments_page={{ assignments.number }}" aria-label="上一页">
-                                                    <span aria-hidden="true">&laquo;</span>
-                                                </a>
-                                            </li>
-                                            {% else %}
-                                            <li class="page-item disabled">
-                                                <span class="page-link" aria-hidden="true">&laquo;</span>
-                                            </li>
-                                            {% endif %}
-                                            
-                                            {% for i in students.paginator.page_range %}
-                                                {% if students.number == i %}
-                                                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
-                                                {% else %}
-                                                <li class="page-item">
-                                                    <a class="page-link" href="?students_page={{ i }}&teachers_page={{ teachers.number }}&admins_page={{ admins.number }}&assignments_page={{ assignments.number }}">{{ i }}</a>
-                                                </li>
-                                                {% endif %}
-                                            {% endfor %}
-                                            
-                                            {% if students.has_next %}
-                                            <li class="page-item">
-                                                <a class="page-link" href="?students_page={{ students.next_page_number }}&teachers_page={{ teachers.number }}&admins_page={{ admins.number }}&assignments_page={{ assignments.number }}" aria-label="下一页">
-                                                    <span aria-hidden="true">&raquo;</span>
-                                                </a>
-                                            </li>
-                                            {% else %}
-                                            <li class="page-item disabled">
-                                                <span class="page-link" aria-hidden="true">&raquo;</span>
-                                            </li>
-                                            {% endif %}
-                                        </ul>
-                                    </nav>
-                                    <div class="text-center text-muted small">
-                                        显示第 {{ students.start_index }} 至 {{ students.end_index }} 条，共 {{ total_students }} 条记录
+                                <div id="students-container">
+                                    <!-- 使用AJAX加载的学生内容 -->
+                                    <!-- 初始加载时会显示加载指示器 -->
+                                    <div class="loading-indicator">
+                                        <div class="spinner-border text-primary mb-2" role="status">
+                                            <span class="visually-hidden">加载中...</span>
+                                        </div>
+                                        <p class="text-muted mb-0">正在加载学生数据...</p>
                                     </div>
                                 </div>
-                                {% endif %}
                             </div>
 
                             <div class="tab-pane fade" id="teachers" role="tabpanel">
-                                <div class="table-responsive">
-                                    <table class="table table-hover custom-table">
-                                        <thead>
-                                            <tr>
-                                                <th>用户名</th>
-                                                <th>注册时间</th>
-                                                <th>作业数量</th>
-                                                <th>操作</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for teacher in teachers %}
-                                            <tr>
-                                                <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="avatar avatar-sm bg-light me-2">
-                                                            <i class="bi bi-person-workspace"></i>
-                                                        </div>
-                                                        <div>{{ teacher.username }}</div>
-                                                    </div>
-                                                </td>
-                                                <td>{{ teacher.date_joined|date:"Y-m-d H:i" }}</td>
-                                                <td><span class="badge assignment-count">{{ teacher.assignments.count }}</span></td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-danger btn-icon delete-user" data-id="{{ teacher.id }}">
-                                                        <i class="bi bi-trash me-1"></i> 删除
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            {% empty %}
-                                            <tr>
-                                                <td colspan="4" class="text-center empty-data">
-                                                    <div class="empty-icon-container mb-2">
-                                                        <i class="bi bi-person-slash"></i>
-                                                    </div>
-                                                    <p>暂无教师账号</p>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                
-                                <!-- 教师分页控件 -->
-                                {% if teachers.has_other_pages %}
-                                <div class="pagination-container mt-3">
-                                    <nav aria-label="教师列表分页">
-                                        <ul class="pagination justify-content-center">
-                                            {% if teachers.has_previous %}
-                                            <li class="page-item">
-                                                <a class="page-link" href="?students_page={{ students.number }}&teachers_page={{ teachers.previous_page_number }}&admins_page={{ admins.number }}&assignments_page={{ assignments.number }}" aria-label="上一页">
-                                                    <span aria-hidden="true">&laquo;</span>
-                                                </a>
-                                            </li>
-                                            {% else %}
-                                            <li class="page-item disabled">
-                                                <span class="page-link" aria-hidden="true">&laquo;</span>
-                                            </li>
-                                            {% endif %}
-                                            
-                                            {% for i in teachers.paginator.page_range %}
-                                                {% if teachers.number == i %}
-                                                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
-                                                {% else %}
-                                                <li class="page-item">
-                                                    <a class="page-link" href="?students_page={{ students.number }}&teachers_page={{ i }}&admins_page={{ admins.number }}&assignments_page={{ assignments.number }}">{{ i }}</a>
-                                                </li>
-                                                {% endif %}
-                                            {% endfor %}
-                                            
-                                            {% if teachers.has_next %}
-                                            <li class="page-item">
-                                                <a class="page-link" href="?students_page={{ students.number }}&teachers_page={{ teachers.next_page_number }}&admins_page={{ admins.number }}&assignments_page={{ assignments.number }}" aria-label="下一页">
-                                                    <span aria-hidden="true">&raquo;</span>
-                                                </a>
-                                            </li>
-                                            {% else %}
-                                            <li class="page-item disabled">
-                                                <span class="page-link" aria-hidden="true">&raquo;</span>
-                                            </li>
-                                            {% endif %}
-                                        </ul>
-                                    </nav>
-                                    <div class="text-center text-muted small">
-                                        显示第 {{ teachers.start_index }} 至 {{ teachers.end_index }} 条，共 {{ total_teachers }} 条记录
+                                <div id="teachers-container">
+                                    <!-- 使用AJAX加载的教师内容 -->
+                                    <!-- 初始加载时会显示加载指示器 -->
+                                    <div class="loading-indicator">
+                                        <div class="spinner-border text-primary mb-2" role="status">
+                                            <span class="visually-hidden">加载中...</span>
+                                        </div>
+                                        <p class="text-muted mb-0">正在加载教师数据...</p>
                                     </div>
                                 </div>
-                                {% endif %}
                             </div>
 
                             <div class="tab-pane fade" id="admins" role="tabpanel">
@@ -290,7 +131,7 @@
                                                         <div class="avatar avatar-sm bg-light me-2">
                                                             <i class="bi bi-shield-lock"></i>
                                                         </div>
-                                                        <div>{{ admin.username }}</div>
+                                                        <div class="admin-username">{{ admin.username }}</div>
                                                     </div>
                                                 </td>
                                                 <td>{{ admin.date_joined|date:"Y-m-d H:i" }}</td>
@@ -379,117 +220,16 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover custom-table">
-                                <thead>
-                                    <tr>
-                                        <th>标题</th>
-                                        <th>科目</th>
-                                        <th>教师</th>
-                                        <th>截止日期</th>
-                                        <th>完成比例</th>
-                                        <th>操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for assignment in assignments %}
-                                    <tr>
-                                        <td>
-                                            <div class="text-truncate assignment-title" title="{{ assignment.title }}">
-                                                {{ assignment.title }}
-                                            </div>
-                                        </td>
-                                        <td><span class="badge subject-badge">{{ assignment.subject.name }}</span></td>
-                                        <td>{{ assignment.teacher.username }}</td>
-                                        <td>{{ assignment.end_date|date:"Y-m-d" }}</td>
-                                        <td>
-                                            {% if assignment.total_count > 0 %}
-                                            <div class="completion-wrapper">
-                                                <div class="progress" style="height: 6px;">
-                                                    <div class="progress-bar" role="progressbar" style="width: {{ assignment.completion_percentage }}%"></div>
-                                                </div>
-                                                <div class="completion-text">
-                                                    {{ assignment.completed_count }}/{{ assignment.total_count }}
-                                                    ({{ assignment.completion_percentage }}%)
-                                                </div>
-                                            </div>
-                                            {% else %}
-                                            <span class="badge no-data-badge">0/0 (0%)</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <div class="d-flex gap-2">
-                                                <a href="{% url 'assignment_detail' pk=assignment.id %}" class="btn btn-sm btn-primary btn-icon">
-                                                    <i class="bi bi-eye me-1"></i> 查看
-                                                </a>
-                                                <a href="{% url 'edit_assignment' pk=assignment.id %}" class="btn btn-sm btn-primary btn-icon">
-                                                    <i class="bi bi-pencil me-1"></i> 编辑
-                                                </a>
-                                                <button class="btn btn-sm btn-danger btn-icon delete-assignment" data-id="{{ assignment.id }}">
-                                                    <i class="bi bi-trash me-1"></i> 删除
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="6" class="text-center empty-data">
-                                            <div class="empty-icon-container mb-2">
-                                                <i class="bi bi-journal-x"></i>
-                                            </div>
-                                            <p>暂无作业</p>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <!-- 作业分页控件 -->
-                        {% if assignments.has_other_pages %}
-                        <div class="pagination-container mt-3">
-                            <nav aria-label="作业列表分页">
-                                <ul class="pagination justify-content-center">
-                                    {% if assignments.has_previous %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?students_page={{ students.number }}&teachers_page={{ teachers.number }}&admins_page={{ admins.number }}&assignments_page={{ assignments.previous_page_number }}" aria-label="上一页">
-                                            <span aria-hidden="true">&laquo;</span>
-                                        </a>
-                                    </li>
-                                    {% else %}
-                                    <li class="page-item disabled">
-                                        <span class="page-link" aria-hidden="true">&laquo;</span>
-                                    </li>
-                                    {% endif %}
-                                    
-                                    {% for i in assignments.paginator.page_range %}
-                                        {% if assignments.number == i %}
-                                        <li class="page-item active"><span class="page-link">{{ i }}</span></li>
-                                        {% else %}
-                                        <li class="page-item">
-                                            <a class="page-link" href="?students_page={{ students.number }}&teachers_page={{ teachers.number }}&admins_page={{ admins.number }}&assignments_page={{ i }}">{{ i }}</a>
-                                        </li>
-                                        {% endif %}
-                                    {% endfor %}
-                                    
-                                    {% if assignments.has_next %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?students_page={{ students.number }}&teachers_page={{ teachers.number }}&admins_page={{ admins.number }}&assignments_page={{ assignments.next_page_number }}" aria-label="下一页">
-                                            <span aria-hidden="true">&raquo;</span>
-                                        </a>
-                                    </li>
-                                    {% else %}
-                                    <li class="page-item disabled">
-                                        <span class="page-link" aria-hidden="true">&raquo;</span>
-                                    </li>
-                                    {% endif %}
-                                </ul>
-                            </nav>
-                            <div class="text-center text-muted small">
-                                显示第 {{ assignments.start_index }} 至 {{ assignments.end_index }} 条，共 {{ total_assignments }} 条记录
+                        <div id="assignments-container">
+                            <!-- 使用AJAX加载的作业内容 -->
+                            <!-- 初始加载时会显示加载指示器 -->
+                            <div class="loading-indicator">
+                                <div class="spinner-border text-primary mb-2" role="status">
+                                    <span class="visually-hidden">加载中...</span>
+                                </div>
+                                <p class="text-muted mb-0">正在加载作业数据...</p>
                             </div>
                         </div>
-                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -942,12 +682,566 @@
         color: var(--text-secondary);
         background-color: rgba(0, 49, 82, 0.05);
     }
+    
+    /* AJAX加载容器样式 */
+    #students-container,
+    #teachers-container,
+    #assignments-container {
+        position: relative;
+        min-height: 100px;
+        transition: opacity 0.3s ease;
+    }
+    
+    .loading-container {
+        opacity: 0.7;
+    }
+    
+    .loading-indicator {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+    }
+    
+    /* 页面过渡动画效果 */
+    .fade-transition {
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    
+    .fade-transition.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    /* 分页导航高亮效果 */
+    .student-page-nav,
+    .teacher-page-nav,
+    .assignment-page-nav {
+        transition: all 0.3s ease;
+    }
+    
+    .student-page-nav:hover,
+    .teacher-page-nav:hover,
+    .assignment-page-nav:hover {
+        background-color: rgba(var(--primary-rgb), 0.1);
+        transform: translateY(-2px);
+    }
+    
+    /* 删除动画效果 */
+    .row-delete-animation {
+        animation: slide-fade-out 0.5s ease forwards;
+    }
+    
+    @keyframes slide-fade-out {
+        0% {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        100% {
+            opacity: 0;
+            transform: translateX(20px);
+            height: 0;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // 加载初始数据
+        loadStudents(1);
+        
+        // 当切换到教师标签时加载教师数据
+        document.getElementById('teachers-tab').addEventListener('click', function() {
+            const teachersContainer = document.getElementById('teachers-container');
+            if (teachersContainer && teachersContainer.dataset.loaded !== 'true') {
+                loadTeachers(1);
+                teachersContainer.dataset.loaded = 'true';
+            }
+        });
+        
+        // 加载作业数据
+        loadAssignments(1);
+        
+        // 绑定管理员标签页中的删除用户按钮
+        bindAdminDeleteButtons();
+        
+        // 加载学生数据
+        function loadStudents(page) {
+            const container = document.getElementById('students-container');
+            if (container) {
+                // 添加加载中的类样式
+                container.classList.add('loading-container');
+                
+                // 显示加载状态
+                container.innerHTML = '<div class="loading-indicator"><div class="spinner-border text-primary mb-2" role="status"><span class="visually-hidden">加载中...</span></div><p class="text-muted mb-0">正在加载学生数据...</p></div>';
+                
+                // 发送AJAX请求
+                fetch(`{% url "get_admin_students" %}?page=${page}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('服务器响应异常: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            // 创建包含内容的临时容器
+                            const tempContainer = document.createElement('div');
+                            tempContainer.innerHTML = data.html;
+                            tempContainer.classList.add('fade-transition');
+                            
+                            // 更新容器内容
+                            container.innerHTML = '';
+                            container.appendChild(tempContainer);
+                            
+                            // 添加过渡效果
+                            setTimeout(() => {
+                                tempContainer.classList.add('show');
+                                container.classList.remove('loading-container');
+                            }, 50);
+                            
+                            // 更新URL的参数，但不刷新页面
+                            const url = new URL(window.location);
+                            url.searchParams.set('students_page', page);
+                            window.history.pushState({}, '', url);
+                            
+                            // 绑定分页事件
+                            bindStudentPagination();
+                            
+                            // 绑定删除按钮事件
+                            bindDeleteUserButtons();
+                        } else {
+                            showErrorMessage(container, data.message || '加载失败');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showErrorMessage(container, error.message || '网络错误');
+                    });
+            }
+        }
+        
+        // 显示错误消息
+        function showErrorMessage(container, message) {
+            container.classList.remove('loading-container');
+            container.innerHTML = `
+                <div class="alert alert-danger mx-3 my-3">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>加载失败:</strong> ${message}
+                    <button class="btn btn-sm btn-outline-danger ms-3" onclick="window.location.reload()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>刷新页面
+                    </button>
+                </div>
+            `;
+        }
+        
+        // 加载教师数据
+        function loadTeachers(page) {
+            const container = document.getElementById('teachers-container');
+            if (container) {
+                // 添加加载中的类样式
+                container.classList.add('loading-container');
+                
+                // 显示加载状态
+                container.innerHTML = '<div class="loading-indicator"><div class="spinner-border text-primary mb-2" role="status"><span class="visually-hidden">加载中...</span></div><p class="text-muted mb-0">正在加载教师数据...</p></div>';
+                
+                // 发送AJAX请求
+                fetch(`{% url "get_admin_teachers" %}?page=${page}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('服务器响应异常: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            // 创建包含内容的临时容器
+                            const tempContainer = document.createElement('div');
+                            tempContainer.innerHTML = data.html;
+                            tempContainer.classList.add('fade-transition');
+                            
+                            // 更新容器内容
+                            container.innerHTML = '';
+                            container.appendChild(tempContainer);
+                            
+                            // 添加过渡效果
+                            setTimeout(() => {
+                                tempContainer.classList.add('show');
+                                container.classList.remove('loading-container');
+                            }, 50);
+                            
+                            // 更新URL的参数，但不刷新页面
+                            const url = new URL(window.location);
+                            url.searchParams.set('teachers_page', page);
+                            window.history.pushState({}, '', url);
+                            
+                            // 绑定分页事件
+                            bindTeacherPagination();
+                            
+                            // 绑定删除按钮事件
+                            bindDeleteUserButtons();
+                        } else {
+                            showErrorMessage(container, data.message || '加载失败');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showErrorMessage(container, error.message || '网络错误');
+                    });
+            }
+        }
+        
+        // 加载作业数据
+        function loadAssignments(page) {
+            const container = document.getElementById('assignments-container');
+            if (container) {
+                // 添加加载中的类样式
+                container.classList.add('loading-container');
+                
+                // 显示加载状态
+                container.innerHTML = '<div class="loading-indicator"><div class="spinner-border text-primary mb-2" role="status"><span class="visually-hidden">加载中...</span></div><p class="text-muted mb-0">正在加载作业数据...</p></div>';
+                
+                // 发送AJAX请求
+                fetch(`{% url "get_admin_assignments" %}?page=${page}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('服务器响应异常: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            // 创建包含内容的临时容器
+                            const tempContainer = document.createElement('div');
+                            tempContainer.innerHTML = data.html;
+                            tempContainer.classList.add('fade-transition');
+                            
+                            // 更新容器内容
+                            container.innerHTML = '';
+                            container.appendChild(tempContainer);
+                            
+                            // 添加过渡效果
+                            setTimeout(() => {
+                                tempContainer.classList.add('show');
+                                container.classList.remove('loading-container');
+                            }, 50);
+                            
+                            // 更新URL的参数，但不刷新页面
+                            const url = new URL(window.location);
+                            url.searchParams.set('assignments_page', page);
+                            window.history.pushState({}, '', url);
+                            
+                            // 绑定分页事件
+                            bindAssignmentPagination();
+                            
+                            // 绑定删除作业按钮
+                            bindDeleteAssignmentButtons();
+                        } else {
+                            showErrorMessage(container, data.message || '加载失败');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showErrorMessage(container, error.message || '网络错误');
+                    });
+            }
+        }
+        
+        // 绑定学生分页事件
+        function bindStudentPagination() {
+            const pageLinks = document.querySelectorAll('.student-page-nav');
+            pageLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = this.getAttribute('data-page');
+                    if (page) {
+                        loadStudents(page);
+                    }
+                });
+            });
+        }
+        
+        // 绑定教师分页事件
+        function bindTeacherPagination() {
+            const pageLinks = document.querySelectorAll('.teacher-page-nav');
+            pageLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = this.getAttribute('data-page');
+                    if (page) {
+                        loadTeachers(page);
+                    }
+                });
+            });
+        }
+        
+        // 绑定作业分页事件
+        function bindAssignmentPagination() {
+            const pageLinks = document.querySelectorAll('.assignment-page-nav');
+            pageLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = this.getAttribute('data-page');
+                    if (page) {
+                        loadAssignments(page);
+                    }
+                });
+            });
+        }
+        
+        // 绑定删除用户按钮事件
+        function bindDeleteUserButtons() {
+            const deleteUserBtns = document.querySelectorAll('.delete-user');
+            deleteUserBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const userId = this.dataset.id;
+                    // 尝试查找用户名 - 为不同的用户类型使用不同的选择器
+                    let usernameElement;
+                    
+                    // 1. 首先检查是否在管理员标签页
+                    if (this.closest('#admins')) {
+                        usernameElement = this.closest('tr').querySelector('.admin-username');
+                    } 
+                    // 2. 然后检查AJAX加载的用户（学生、教师）
+                    else {
+                        // 先尝试标准格式
+                        usernameElement = this.closest('tr').querySelector('td:first-child div div');
+                    }
+                    
+                    // 获取用户名文本
+                    const username = usernameElement ? usernameElement.textContent.trim() : '此用户';
+                    
+                    if (confirm(`确定要删除用户 "${username}" 吗？此操作不可恢复！`)) {
+                        // 显示加载状态
+                        const originalText = this.innerHTML;
+                        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+                        this.disabled = true;
+                        
+                        fetch('/api/delete-user/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': '{{ csrf_token }}'
+                            },
+                            body: JSON.stringify({
+                                user_id: userId
+                            })
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('服务器响应异常: ' + response.status);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                // 创建动画效果，然后刷新当前数据
+                                const row = this.closest('tr');
+                                row.classList.add('row-delete-animation');
+                                
+                                // 显示成功提示
+                                showSuccessToast(`用户 "${username}" 已成功删除`);
+                                
+                                // 等待动画完成后重新加载当前数据
+                                setTimeout(() => {
+                                    // 根据所在的容器确定重新加载哪个数据
+                                    if (this.closest('#students-container')) {
+                                        const studentCountEl = document.querySelector('.student-total-count');
+                                        if (studentCountEl) {
+                                            // 更新计数
+                                            const currentCount = parseInt(studentCountEl.textContent) - 1;
+                                            studentCountEl.textContent = currentCount;
+                                        }
+                                        loadStudents(getCurrentPageFromUrl('students_page') || 1);
+                                    } else if (this.closest('#teachers-container')) {
+                                        const teacherCountEl = document.querySelector('.teacher-total-count');
+                                        if (teacherCountEl) {
+                                            // 更新计数
+                                            const currentCount = parseInt(teacherCountEl.textContent) - 1;
+                                            teacherCountEl.textContent = currentCount;
+                                        }
+                                        loadTeachers(getCurrentPageFromUrl('teachers_page') || 1);
+                                    }
+                                }, 500); // 等待动画完成
+                            } else {
+                                // 显示错误提示
+                                showErrorToast(data.message || '删除失败');
+                                this.innerHTML = originalText;
+                                this.disabled = false;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            showErrorToast('操作失败: ' + error.message);
+                            this.innerHTML = originalText;
+                            this.disabled = false;
+                        });
+                    }
+                });
+            });
+        }
+        
+        // 获取URL中的页码参数
+        function getCurrentPageFromUrl(paramName) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(paramName);
+        }
+        
+        // 显示成功提示
+        function showSuccessToast(message) {
+            // 创建一个提示元素
+            const toastContainer = document.getElementById('toast-container') || createToastContainer();
+            const toast = document.createElement('div');
+            toast.className = 'toast align-items-center text-white bg-success border-0';
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+            
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // 使用Bootstrap创建提示
+            const bsToast = new bootstrap.Toast(toast, {
+                delay: 3000
+            });
+            bsToast.show();
+            
+            // 提示显示后移除
+            toast.addEventListener('hidden.bs.toast', function() {
+                toast.remove();
+            });
+        }
+        
+        // 显示错误提示
+        function showErrorToast(message) {
+            // 创建一个提示元素
+            const toastContainer = document.getElementById('toast-container') || createToastContainer();
+            const toast = document.createElement('div');
+            toast.className = 'toast align-items-center text-white bg-danger border-0';
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+            
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // 使用Bootstrap创建提示
+            const bsToast = new bootstrap.Toast(toast, {
+                delay: 5000
+            });
+            bsToast.show();
+            
+            // 提示显示后移除
+            toast.addEventListener('hidden.bs.toast', function() {
+                toast.remove();
+            });
+        }
+        
+        // 创建Toast容器
+        function createToastContainer() {
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '1050';
+            document.body.appendChild(container);
+            return container;
+        }
+        
+        // 绑定删除作业按钮事件
+        function bindDeleteAssignmentButtons() {
+            const deleteAssignmentBtns = document.querySelectorAll('.delete-assignment');
+            deleteAssignmentBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const assignmentId = this.dataset.id;
+                    const assignmentTitle = this.closest('tr').querySelector('.assignment-title').getAttribute('title') || '此作业';
+                    
+                    if (confirm(`确定要删除作业 "${assignmentTitle}" 吗？此操作不可恢复！`)) {
+                        // 显示加载状态
+                        const originalText = this.innerHTML;
+                        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+                        this.disabled = true;
+                        
+                        fetch('/api/delete-assignment/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': '{{ csrf_token }}'
+                            },
+                            body: JSON.stringify({
+                                assignment_id: assignmentId
+                            })
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('服务器响应异常: ' + response.status);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                // 创建动画效果，然后刷新当前数据
+                                const row = this.closest('tr');
+                                row.classList.add('row-delete-animation');
+                                
+                                // 显示成功提示
+                                showSuccessToast(`作业 "${assignmentTitle}" 已成功删除`);
+                                
+                                // 等待动画完成后重新加载当前数据
+                                setTimeout(() => {
+                                    // 更新作业计数（如果元素存在）
+                                    const assignmentCountEl = document.querySelector('.assignment-total-count');
+                                    if (assignmentCountEl) {
+                                        const currentCount = parseInt(assignmentCountEl.textContent) - 1;
+                                        assignmentCountEl.textContent = currentCount;
+                                    }
+                                    
+                                    // 重新加载作业数据，保持当前页码
+                                    loadAssignments(getCurrentPageFromUrl('assignments_page') || 1);
+                                }, 500); // 等待动画完成
+                            } else {
+                                // 显示错误提示
+                                showErrorToast(data.message || '删除失败');
+                                this.innerHTML = originalText;
+                                this.disabled = false;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            showErrorToast('操作失败: ' + error.message);
+                            this.innerHTML = originalText;
+                            this.disabled = false;
+                        });
+                    }
+                });
+            });
+        }
+
         // 创建用户
         document.getElementById('createUserBtn').addEventListener('click', function() {
             const username = document.getElementById('username').value;
@@ -955,7 +1249,7 @@
             const userType = document.getElementById('userType').value;
             
             if (!username || !password) {
-                alert('请填写完整信息');
+                showErrorToast('请填写完整信息');
                 return;
             }
             
@@ -976,122 +1270,46 @@
                     user_type: userType
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('服务器响应异常: ' + response.status);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
-                    alert('创建成功');
-                    location.reload();
+                    showSuccessToast(`用户 "${username}" 创建成功`);
+                    
+                    // 关闭模态框
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('createUserModal'));
+                    modal.hide();
+                    
+                    // 清空表单
+                    document.getElementById('username').value = '';
+                    document.getElementById('password').value = '';
+                    
+                    // 根据用户类型刷新相应的列表
+                    if (userType === 'student') {
+                        loadStudents(1);
+                    } else if (userType === 'teacher') {
+                        loadTeachers(1);
+                    } else {
+                        // 管理员需要刷新整个页面，因为管理员列表不是通过AJAX加载的
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    }
                 } else {
-                    alert(data.message || '创建失败');
-                    this.innerHTML = originalText;
-                    this.disabled = false;
+                    showErrorToast(data.message || '创建失败');
                 }
+                this.innerHTML = originalText;
+                this.disabled = false;
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('操作失败，请重试');
+                showErrorToast('操作失败: ' + error.message);
                 this.innerHTML = originalText;
                 this.disabled = false;
-            });
-        });
-        
-        // 删除用户
-        const deleteUserBtns = document.querySelectorAll('.delete-user');
-        deleteUserBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const userId = this.dataset.id;
-                
-                if (confirm('确定要删除此用户吗？此操作不可恢复！')) {
-                    // 显示加载状态
-                    const originalText = this.innerHTML;
-                    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
-                    this.disabled = true;
-                    
-                    fetch('/api/delete-user/', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': '{{ csrf_token }}'
-                        },
-                        body: JSON.stringify({
-                            user_id: userId
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // 创建动画效果，然后刷新页面
-                            const row = this.closest('tr');
-                            row.style.transition = 'all 0.3s ease';
-                            row.style.opacity = '0';
-                            row.style.transform = 'translateX(20px)';
-                            
-                            setTimeout(() => {
-                                location.reload();
-                            }, 300);
-                        } else {
-                            alert(data.message || '删除失败');
-                            this.innerHTML = originalText;
-                            this.disabled = false;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('操作失败，请重试');
-                        this.innerHTML = originalText;
-                        this.disabled = false;
-                    });
-                }
-            });
-        });
-        
-        // 删除作业
-        const deleteAssignmentBtns = document.querySelectorAll('.delete-assignment');
-        deleteAssignmentBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const assignmentId = this.dataset.id;
-                
-                if (confirm('确定要删除此作业吗？此操作不可恢复！')) {
-                    // 显示加载状态
-                    const originalText = this.innerHTML;
-                    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
-                    this.disabled = true;
-                    
-                    fetch('/api/delete-assignment/', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': '{{ csrf_token }}'
-                        },
-                        body: JSON.stringify({
-                            assignment_id: assignmentId
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // 创建动画效果，然后刷新页面
-                            const row = this.closest('tr');
-                            row.style.transition = 'all 0.3s ease';
-                            row.style.opacity = '0';
-                            row.style.transform = 'translateX(20px)';
-                            
-                            setTimeout(() => {
-                                location.reload();
-                            }, 300);
-                        } else {
-                            alert(data.message || '删除失败');
-                            this.innerHTML = originalText;
-                            this.disabled = false;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('操作失败，请重试');
-                        this.innerHTML = originalText;
-                        this.disabled = false;
-                    });
-                }
             });
         });
         
@@ -1100,7 +1318,7 @@
             const days = document.getElementById('cleanupDays').value;
             
             if (!days || isNaN(days) || days <= 0) {
-                alert('请输入有效的天数（正整数）');
+                showErrorToast('请输入有效的天数（正整数）');
                 return;
             }
             
@@ -1120,25 +1338,97 @@
                         days: days
                     })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('服务器响应异常: ' + response.status);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
-                        alert(data.message);
-                        location.reload();
+                        showSuccessToast(data.message || '清理操作成功完成');
+                        
+                        // 关闭模态框
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('cleanupModal'));
+                        modal.hide();
+                        
+                        // 重新加载作业数据
+                        loadAssignments(1);
                     } else {
-                        alert(data.message || '清理旧作业失败');
-                        this.innerHTML = originalText;
-                        this.disabled = false;
+                        showErrorToast(data.message || '清理旧作业失败');
                     }
+                    this.innerHTML = originalText;
+                    this.disabled = false;
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('操作失败，请重试');
+                    showErrorToast('操作失败: ' + error.message);
                     this.innerHTML = originalText;
                     this.disabled = false;
                 });
             }
         });
+
+        // 绑定管理员标签页中的删除用户按钮
+        function bindAdminDeleteButtons() {
+            const adminDeleteBtns = document.querySelectorAll('#admins .delete-user');
+            adminDeleteBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const userId = this.dataset.id;
+                    const username = this.closest('tr').querySelector('.admin-username').textContent.trim();
+                    
+                    if (confirm(`确定要删除管理员 "${username}" 吗？此操作不可恢复！`)) {
+                        // 显示加载状态
+                        const originalText = this.innerHTML;
+                        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+                        this.disabled = true;
+                        
+                        fetch('/api/delete-user/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': '{{ csrf_token }}'
+                            },
+                            body: JSON.stringify({
+                                user_id: userId
+                            })
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('服务器响应异常: ' + response.status);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                // 创建动画效果
+                                const row = this.closest('tr');
+                                row.classList.add('row-delete-animation');
+                                
+                                // 显示成功提示
+                                showSuccessToast(`管理员 "${username}" 已成功删除`);
+                                
+                                // 等待动画完成后刷新页面
+                                setTimeout(() => {
+                                    location.reload();
+                                }, 500);
+                            } else {
+                                // 显示错误提示
+                                showErrorToast(data.message || '删除失败');
+                                this.innerHTML = originalText;
+                                this.disabled = false;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            showErrorToast('操作失败: ' + error.message);
+                            this.innerHTML = originalText;
+                            this.disabled = false;
+                        });
+                    }
+                });
+            });
+        }
     });
 </script>
 {% endblock %} 

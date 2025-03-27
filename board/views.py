@@ -233,7 +233,7 @@ def admin_dashboard(request):
     assignments_page = request.GET.get('assignments_page', 1)
     
     # 查询用户和作业数据
-    students_list = User.objects.filter(user_type='student').order_by('username')
+    students_list = User.objects.filter(user_type='student').order_by('student_id', 'username')
     teachers_list = User.objects.filter(user_type='teacher').order_by('username')
     admins_list = User.objects.filter(user_type='admin').exclude(id=request.user.id).order_by('username')
     assignments_list = Assignment.objects.all().order_by('-created_at')
@@ -761,6 +761,16 @@ def create_user(request):
                 password=password,
                 user_type=user_type
             )
+
+            # 如果创建的是学生账号，为该学生添加已有作业的完成记录
+            if user_type == 'student':
+                existing_assignments = Assignment.objects.all()
+                for assignment in existing_assignments:
+                    CompletionRecord.objects.create(
+                        student=user,
+                        assignment=assignment,
+                        completed=False
+                    )
             
             return JsonResponse({'success': True})
         except Exception as e:
@@ -1004,10 +1014,24 @@ def hot_topics_view(request):
         ).values_list('topic_id', flat=True))
     else:
         user_liked_topics = []
+
+    # 获取最近热搜（按创建时间降序排序）
+    recent_topics_list = HotTopic.objects.all().order_by('-created_at')
+
+    # 创建分页器，每页显示10条最近热搜
+    page = request.GET.get('page', 1)
+    paginator = Paginator(recent_topics_list, 10)
+
+    try:
+        recent_topics = paginator.page(page)
+    except:
+        # 如果页码无效，返回第一页
+        recent_topics = paginator.page(1)
     
     context = {
         'top_topics': top_topics,
         'user_liked_topics': user_liked_topics,
+        'recent_topics': recent_topics,
     }
     
     return render(request, 'hot_topics.html', context)
@@ -1065,6 +1089,7 @@ def pin_hot_topic(request):
             topic = HotTopic.objects.get(id=topic_id)
             topic.is_pinned = not topic.is_pinned
             topic.save()
+            print(topic.is_pinned)
             
             action = '置顶' if topic.is_pinned else '取消置顶'
             return JsonResponse({'success': True, 'is_pinned': topic.is_pinned, 'message': f'已{action}热搜'})
@@ -1111,6 +1136,52 @@ def toggle_hot_topic_like(request):
     return JsonResponse({'success': False, 'message': '请求方法错误'})
 
 
+@user_type_required(['student', 'admin'])
+def get_recent_topics(request):
+    """AJAX获取最近热搜数据"""
+    try:
+        # 获取页码参数
+        page = request.GET.get('page', 1)
+
+        # 获取最近热搜（按创建时间降序排序）
+        recent_topics_list = HotTopic.objects.all().order_by('-created_at')
+
+        # 创建分页器
+        paginator = Paginator(recent_topics_list, 10)  # 每页10条
+
+        try:
+            recent_topics = paginator.page(page)
+        except:
+            # 如果页码无效，返回第一页
+            recent_topics = paginator.page(1)
+
+        # 获取用户已点赞的热搜ID列表
+        if request.user.is_authenticated:
+            user_liked_topics = list(HotTopicLike.objects.filter(
+                user=request.user
+            ).values_list('topic_id', flat=True))
+        else:
+            user_liked_topics = []
+
+        # 渲染部分模板
+        html_content = render(request, 'partials/recent_topics.html', {
+            'recent_topics': recent_topics,
+            'user_liked_topics': user_liked_topics
+        }).content.decode('utf-8')
+
+        return JsonResponse({
+            'success': True,
+            'html': html_content,
+            'has_previous': recent_topics.has_previous(),
+            'has_next': recent_topics.has_next(),
+            'current_page': recent_topics.number,
+            'total_pages': paginator.num_pages,
+            'page_range': list(paginator.page_range)
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
 @login_required
 def change_password(request):
     """修改用户密码"""
@@ -1136,3 +1207,138 @@ def change_password(request):
                     messages.error(request, error)
 
     return redirect('settings')
+
+
+@user_type_required(['admin'])
+def get_admin_students(request):
+    """AJAX获取学生列表数据"""
+    try:
+        # 获取页码参数
+        page = request.GET.get('page', 1)
+
+        # 获取学生列表数据
+        students_list = User.objects.filter(user_type='student').order_by('student_id', 'username')
+
+        # 创建分页器
+        paginator = Paginator(students_list, 10)  # 每页10条
+
+        try:
+            students = paginator.page(page)
+        except:
+            # 如果页码无效，返回第一页
+            students = paginator.page(1)
+
+        # 渲染部分模板
+        html_content = render(request, 'partials/admin_students.html', {
+            'students': students,
+            'total_students': students_list.count()
+        }).content.decode('utf-8')
+
+        return JsonResponse({
+            'success': True,
+            'html': html_content,
+            'has_previous': students.has_previous(),
+            'has_next': students.has_next(),
+            'current_page': students.number,
+            'total_pages': paginator.num_pages,
+            'page_range': list(paginator.page_range)
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+
+@user_type_required(['admin'])
+def get_admin_teachers(request):
+    """AJAX获取教师列表数据"""
+    try:
+        # 获取页码参数
+        page = request.GET.get('page', 1)
+
+        # 获取教师列表数据
+        teachers_list = User.objects.filter(user_type='teacher').order_by('username')
+
+        # 创建分页器
+        paginator = Paginator(teachers_list, 10)  # 每页10条
+
+        try:
+            teachers = paginator.page(page)
+        except:
+            # 如果页码无效，返回第一页
+            teachers = paginator.page(1)
+
+        # 渲染部分模板
+        html_content = render(request, 'partials/admin_teachers.html', {
+            'teachers': teachers,
+            'total_teachers': teachers_list.count()
+        }).content.decode('utf-8')
+
+        return JsonResponse({
+            'success': True,
+            'html': html_content,
+            'has_previous': teachers.has_previous(),
+            'has_next': teachers.has_next(),
+            'current_page': teachers.number,
+            'total_pages': paginator.num_pages,
+            'page_range': list(paginator.page_range)
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+
+@user_type_required(['admin'])
+def get_admin_assignments(request):
+    """AJAX获取作业列表数据"""
+    try:
+        # 获取页码参数
+        page = request.GET.get('page', 1)
+
+        # 获取作业列表数据
+        assignments_list = Assignment.objects.all().order_by('-created_at')
+
+        # 创建分页器
+        paginator = Paginator(assignments_list, 10)  # 每页10条
+
+        try:
+            assignments = paginator.page(page)
+        except:
+            # 如果页码无效，返回第一页
+            assignments = paginator.page(1)
+
+        # 预先计算每个作业的完成情况
+        for assignment in assignments:
+            # 计算完成的学生数量
+            completed_count = CompletionRecord.objects.filter(
+                assignment=assignment,
+                completed=True
+            ).count()
+
+            # 计算总学生数量
+            total_count = CompletionRecord.objects.filter(
+                assignment=assignment
+            ).count()
+
+            # 添加到作业对象中
+            assignment.completed_count = completed_count
+            assignment.total_count = total_count
+            assignment.completion_percentage = 0 if total_count == 0 else int((completed_count / total_count) * 100)
+
+        # 渲染部分模板
+        html_content = render(request, 'partials/admin_assignments.html', {
+            'assignments': assignments,
+            'total_assignments': assignments_list.count()
+        }).content.decode('utf-8')
+
+        return JsonResponse({
+            'success': True,
+            'html': html_content,
+            'has_previous': assignments.has_previous(),
+            'has_next': assignments.has_next(),
+            'current_page': assignments.number,
+            'total_pages': paginator.num_pages,
+            'page_range': list(paginator.page_range)
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})

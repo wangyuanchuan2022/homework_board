@@ -1,0 +1,138 @@
+{% if recent_topics %}
+{% for topic in recent_topics %}
+<div class="list-group-item hot-topic-card {% if topic.is_pinned %}pinned{% endif %} p-3" data-id="{{ topic.id }}">
+    <div class="d-flex">
+        <div class="flex-grow-1">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+                <div class="topic-title">
+                    <h5>
+                        {% if topic.is_pinned %}
+                        <span class="badge bg-danger me-1">置顶</span>
+                        {% endif %}
+                        <span>{{ topic.title }}</span>
+                    </h5>
+                </div>
+                {% if request.user == topic.author or request.user.user_type == 'admin' %}
+                <div class="dropdown actions-dropdown ms-2">
+                    <button aria-expanded="false" class="btn btn-sm btn-link text-muted" data-bs-toggle="dropdown"
+                            type="button">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        {% if request.user == topic.author or request.user.user_type == 'admin' %}
+                        <li>
+                            <a class="dropdown-item delete-topic" data-id="{{ topic.id }}" href="javascript:void(0);">
+                                <i class="bi bi-trash me-2 text-danger"></i>删除
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if request.user.user_type == 'admin' %}
+                        <li>
+                            <a class="dropdown-item pin-topic" data-id="{{ topic.id }}" data-pinned="{{ topic.is_pinned|yesno:'true,false' }}"
+                               href="javascript:void(0);">
+                                <i class="bi bi-pin-angle me-2 {% if topic.is_pinned %}text-danger{% endif %}"></i>
+                                {% if topic.is_pinned %}取消置顶{% else %}置顶{% endif %}
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+            {% if topic.content %}
+            <p class="mb-2 topic-content">{{ topic.content }}</p>
+            {% endif %}
+            <div class="d-flex justify-content-between align-items-center topic-meta">
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    <small class="text-muted topic-user-info">
+                        {% if topic.is_anonymous %}
+                        匿名人士 · {{ topic.created_at|date:"Y-m-d H:i" }}
+                        {% else %}
+                        {{ topic.author.username }} · {{ topic.created_at|date:"Y-m-d H:i" }}
+                        {% endif %}
+                    </small>
+                    <small class="text-muted">
+                        <i class="bi bi-calendar-date me-1"></i>{{ topic.created_at|date:"Y-m-d H:i" }}
+                    </small>
+                </div>
+                <div class="like-btn {% if topic.id in user_liked_topics %}liked{% endif %}" data-id="{{ topic.id }}">
+                    <i class="bi {% if topic.id in user_liked_topics %}bi-heart-fill{% else %}bi-heart{% endif %} me-1"></i>
+                    <span class="likes-count">{{ topic.likes_count }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- 分页控件 -->
+<div class="list-group-item p-3" id="recent-pagination">
+    <nav aria-label="最近热搜分页">
+        <ul class="pagination justify-content-center mb-0">
+            {% if recent_topics.has_previous %}
+            <li class="page-item">
+                <a aria-label="首页" class="page-link page-nav" data-page="1" href="javascript:void(0);">
+                    <span aria-hidden="true">&laquo;&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a aria-label="上一页" class="page-link page-nav"
+                   data-page="{{ recent_topics.previous_page_number }}" href="javascript:void(0);">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a aria-label="首页" class="page-link" href="javascript:void(0);">
+                    <span aria-hidden="true">&laquo;&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item disabled">
+                <a aria-label="上一页" class="page-link" href="javascript:void(0);">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for i in recent_topics.paginator.page_range %}
+            {% if recent_topics.number == i %}
+            <li class="page-item active"><a class="page-link" href="javascript:void(0);">{{ i }}</a></li>
+            {% elif i > recent_topics.number|add:'-3' and i < recent_topics.number|add:'3' %}
+            <li class="page-item"><a class="page-link page-nav" data-page="{{ i }}" href="javascript:void(0);">{{ i
+                }}</a></li>
+            {% endif %}
+            {% endfor %}
+
+            {% if recent_topics.has_next %}
+            <li class="page-item">
+                <a aria-label="下一页" class="page-link page-nav"
+                   data-page="{{ recent_topics.next_page_number }}" href="javascript:void(0);">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a aria-label="末页" class="page-link page-nav"
+                   data-page="{{ recent_topics.paginator.num_pages }}" href="javascript:void(0);">
+                    <span aria-hidden="true">&raquo;&raquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a aria-label="下一页" class="page-link" href="javascript:void(0);">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            <li class="page-item disabled">
+                <a aria-label="末页" class="page-link" href="javascript:void(0);">
+                    <span aria-hidden="true">&raquo;&raquo;</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% else %}
+<div class="list-group-item p-4 text-center">
+    <p class="mb-0">暂无热搜记录</p>
+</div>
+{% endif %} 

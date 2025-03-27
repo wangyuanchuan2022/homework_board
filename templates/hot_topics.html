@@ -126,6 +126,35 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+    
+    /* 加载指示器样式 */
+    .spinner-border {
+        width: 2rem;
+        height: 2rem;
+        color: var(--primary-color);
+        display: inline-block;
+    }
+    
+    /* 页面过渡动画效果 */
+    #recent-topics-container {
+        position: relative;
+        min-height: 100px;
+        transition: opacity 0.3s ease;
+    }
+    
+    #recent-topics-container.loading {
+        opacity: 0.6;
+    }
+    
+    /* 分页导航高亮效果 */
+    .page-nav {
+        transition: all 0.3s ease;
+    }
+    
+    .page-nav:hover {
+        background-color: rgba(var(--primary-rgb), 0.1);
+        transform: translateY(-2px);
+    }
 </style>
 {% endblock %}
 
@@ -261,6 +290,168 @@
             </div>
         </div>
     </div>
+
+    <!-- 最近热搜部分 -->
+    <div class="row mt-4">
+        <div class="col-md-8 col-lg-7 col-xl-6 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0 text-white">最近热搜</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="recent-topics-container">
+                        <!-- 使用AJAX加载的内容 -->
+                        {% if recent_topics %}
+                        {% for topic in recent_topics %}
+                        <div class="list-group-item hot-topic-card {% if topic.is_pinned %}pinned{% endif %} p-3"
+                             data-id="{{ topic.id }}">
+                            <div class="d-flex">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <div class="topic-title">
+                                            <h5>
+                                                {% if topic.is_pinned %}
+                                                <span class="badge bg-danger me-1">置顶</span>
+                                                {% endif %}
+                                                <span>{{ topic.title }}</span>
+                                            </h5>
+                                        </div>
+                                        {% if request.user == topic.author or request.user.user_type == 'admin' %}
+                                        <div class="dropdown actions-dropdown ms-2">
+                                            <button aria-expanded="false" class="btn btn-sm btn-link text-muted"
+                                                    data-bs-toggle="dropdown" type="button">
+                                                <i class="bi bi-three-dots-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                {% if request.user == topic.author or request.user.user_type == 'admin'
+                                                %}
+                                                <li>
+                                                    <a class="dropdown-item delete-topic" data-id="{{ topic.id }}"
+                                                       href="javascript:void(0);">
+                                                        <i class="bi bi-trash me-2 text-danger"></i>删除
+                                                    </a>
+                                                </li>
+                                                {% endif %}
+                                                {% if request.user.user_type == 'admin' %}
+                                                <li>
+                                                    <a class="dropdown-item pin-topic" data-id="{{ topic.id }}"
+                                                       data-pinned="{{ topic.is_pinned|yesno:'true,false' }}"
+                                                       href="javascript:void(0);">
+                                                        <i class="bi bi-pin-angle me-2 {% if topic.is_pinned %}text-danger{% endif %}"></i>
+                                                        {% if topic.is_pinned %}取消置顶{% else %}置顶{% endif %}
+                                                    </a>
+                                                </li>
+                                                {% endif %}
+                                            </ul>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% if topic.content %}
+                                    <p class="mb-2 topic-content">{{ topic.content }}</p>
+                                    {% endif %}
+                                    <div class="d-flex justify-content-between align-items-center topic-meta">
+                                        <div class="d-flex align-items-center flex-wrap gap-2">
+                                            <small class="text-muted topic-user-info">
+                                                {% if topic.is_anonymous %}
+                                                匿名人士 · {{ topic.created_at|date:"Y-m-d H:i" }}
+                                                {% else %}
+                                                {{ topic.author.username }} · {{ topic.created_at|date:"Y-m-d H:i" }}
+                                                {% endif %}
+                                            </small>
+                                            <small class="text-muted">
+                                                <i class="bi bi-calendar-date me-1"></i>{{ topic.created_at|date:"Y-m-d
+                                                H:i" }}
+                                            </small>
+                                        </div>
+                                        <div class="like-btn {% if topic.id in user_liked_topics %}liked{% endif %}"
+                                             data-id="{{ topic.id }}">
+                                            <i class="bi {% if topic.id in user_liked_topics %}bi-heart-fill{% else %}bi-heart{% endif %} me-1"></i>
+                                            <span class="likes-count">{{ topic.likes_count }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        <!-- 分页控件 -->
+                        <div class="list-group-item p-3">
+                            <nav aria-label="最近热搜分页">
+                                <ul class="pagination justify-content-center mb-0">
+                                    {% if recent_topics.has_previous %}
+                                    <li class="page-item">
+                                        <a aria-label="首页" class="page-link page-nav" data-page="1"
+                                           href="javascript:void(0);">
+                                            <span aria-hidden="true">&laquo;&laquo;</span>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a aria-label="上一页" class="page-link page-nav"
+                                           data-page="{{ recent_topics.previous_page_number }}" href="javascript:void(0);">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <a aria-label="首页" class="page-link" href="javascript:void(0);">
+                                            <span aria-hidden="true">&laquo;&laquo;</span>
+                                        </a>
+                                    </li>
+                                    <li class="page-item disabled">
+                                        <a aria-label="上一页" class="page-link" href="javascript:void(0);">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+
+                                    {% for i in recent_topics.paginator.page_range %}
+                                    {% if recent_topics.number == i %}
+                                    <li class="page-item active"><a class="page-link" href="javascript:void(0);">{{ i
+                                        }}</a></li>
+                                    {% elif i > recent_topics.number|add:'-3' and i < recent_topics.number|add:'3' %}
+                                    <li class="page-item"><a class="page-link page-nav" data-page="{{ i }}"
+                                                             href="javascript:void(0);">{{ i }}</a></li>
+                                    {% endif %}
+                                    {% endfor %}
+
+                                    {% if recent_topics.has_next %}
+                                    <li class="page-item">
+                                        <a aria-label="下一页" class="page-link page-nav"
+                                           data-page="{{ recent_topics.next_page_number }}" href="javascript:void(0);">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a aria-label="末页" class="page-link page-nav"
+                                           data-page="{{ recent_topics.paginator.num_pages }}" href="javascript:void(0);">
+                                            <span aria-hidden="true">&raquo;&raquo;</span>
+                                        </a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <a aria-label="下一页" class="page-link" href="javascript:void(0);">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                    <li class="page-item disabled">
+                                        <a aria-label="末页" class="page-link" href="javascript:void(0);">
+                                            <span aria-hidden="true">&raquo;&raquo;</span>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% else %}
+                        <div class="list-group-item p-4 text-center">
+                            <p class="mb-0">暂无热搜记录</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- 弹窗提示 -->
@@ -278,6 +469,9 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // 加载初始页面的热搜数据
+        loadRecentTopics(1);
+        
         // 创建热搜表单提交
         const createTopicForm = document.getElementById('createTopicForm');
         if (createTopicForm) {
@@ -312,7 +506,9 @@
                         // 清空表单
                         createTopicForm.reset();
                         showToast('热搜发布成功!');
-                        // 刷新页面以显示新热搜
+                        // 刷新热搜数据
+                        loadRecentTopics(1);
+                        // 也可以考虑重新加载TOP榜数据
                         setTimeout(() => {
                             window.location.reload();
                         }, 1000);
@@ -327,62 +523,64 @@
             });
         }
         
-        // 点赞按钮事件
-        const likeButtons = document.querySelectorAll('.like-btn');
-        likeButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const topicId = this.getAttribute('data-id');
-                
-                // 发送点赞请求
-                fetch('{% url "toggle_hot_topic_like" %}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-CSRFToken': getCookie('csrftoken')
-                    },
-                    body: new URLSearchParams({
-                        'topic_id': topicId
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // 更新点赞状态和数量
-                        const likeIcon = this.querySelector('i');
-                        const likesCount = this.querySelector('.likes-count');
-                        
-                        if (data.action === 'liked') {
-                            likeIcon.classList.remove('bi-heart');
-                            likeIcon.classList.add('bi-heart-fill');
-                            this.classList.add('liked');
-                        } else {
-                            likeIcon.classList.remove('bi-heart-fill');
-                            likeIcon.classList.add('bi-heart');
-                            this.classList.remove('liked');
-                        }
-                        
-                        likesCount.textContent = data.likes_count;
-                        showToast(data.message);
-                    } else {
-                        showToast(data.message || '操作失败，请重试');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showToast('发生错误，请重试');
-                });
-            });
+        // 使用事件委托处理分页导航点击
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.page-nav')) {
+                e.preventDefault();
+                // 获取要加载的页码
+                const page = e.target.closest('.page-nav').getAttribute('data-page');
+                if (page) {
+                    loadRecentTopics(page);
+                }
+            }
         });
         
-        // 删除热搜
-        const deleteButtons = document.querySelectorAll('.delete-topic');
-        deleteButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                if (confirm('确定要删除这条热搜吗？')) {
+        // 加载特定页码的热搜数据
+        function loadRecentTopics(page) {
+            // 显示加载状态
+            const container = document.getElementById('recent-topics-container');
+            if (container) {
+                container.innerHTML = '<div class="list-group-item p-4 text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">加载中...</span></div><p class="mt-2 mb-0">正在加载热搜...</p></div>';
+                
+                // 发送AJAX请求
+                fetch(`{% url "get_recent_topics" %}?page=${page}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // 更新内容
+                            container.innerHTML = data.html;
+                            
+                            // 更新URL的参数，但不刷新页面
+                            const url = new URL(window.location);
+                            url.searchParams.set('page', page);
+                            window.history.pushState({}, '', url);
+                            
+                            // 绑定新加载内容中的点赞和删除按钮
+                            bindLikeButtons();
+                            bindDeleteButtons();
+                            bindPinButtons();
+                        } else {
+                            showToast(data.message || '加载失败，请重试');
+                            container.innerHTML = '<div class="list-group-item p-4 text-center"><p class="mb-0">加载失败，<a href="javascript:void(0);" onclick="loadRecentTopics(1)">点击重试</a></p></div>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showToast('发生错误，请重试');
+                        container.innerHTML = '<div class="list-group-item p-4 text-center"><p class="mb-0">加载失败，<a href="javascript:void(0);" onclick="loadRecentTopics(1)">点击重试</a></p></div>';
+                    });
+            }
+        }
+        
+        // 绑定点赞按钮事件
+        function bindLikeButtons() {
+            const likeButtons = document.querySelectorAll('.like-btn');
+            likeButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
                     const topicId = this.getAttribute('data-id');
                     
-                    // 发送删除请求
-                    fetch('{% url "delete_hot_topic" %}', {
+                    // 发送点赞请求
+                    fetch('{% url "toggle_hot_topic_like" %}', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
@@ -395,33 +593,107 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            showToast('热搜已删除');
-                            // 移除DOM元素
-                            const topicCard = document.querySelector(`.hot-topic-card[data-id="${topicId}"]`);
-                            if (topicCard) {
-                                topicCard.remove();
+                            // 更新点赞状态和数量
+                            const likeIcon = this.querySelector('i');
+                            const likesCount = this.querySelector('.likes-count');
+                            
+                            if (data.action === 'liked') {
+                                likeIcon.classList.remove('bi-heart');
+                                likeIcon.classList.add('bi-heart-fill');
+                                this.classList.add('liked');
+                            } else {
+                                likeIcon.classList.remove('bi-heart-fill');
+                                likeIcon.classList.add('bi-heart');
+                                this.classList.remove('liked');
                             }
+                            
+                            likesCount.textContent = data.likes_count;
+                            showToast(data.message);
                         } else {
-                            showToast(data.message || '删除失败，请重试');
+                            showToast(data.message || '操作失败，请重试');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
                         showToast('发生错误，请重试');
                     });
-                }
+                });
             });
-        });
+        }
         
-        // 置顶/取消置顶热搜
-        const pinButtons = document.querySelectorAll('.pin-topic');
-        pinButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const topicId = this.getAttribute('data-id');
-                const isPinned = this.getAttribute('data-pinned') === 'true';
-                const action = isPinned ? '取消置顶' : '置顶';
-                
-                if (confirm(`确定要${action}这条热搜吗？`)) {
+        // 绑定删除热搜按钮事件
+        function bindDeleteButtons() {
+            const deleteButtons = document.querySelectorAll('.delete-topic');
+            deleteButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (confirm('确定要删除这条热搜吗？')) {
+                        const topicId = this.getAttribute('data-id');
+                        
+                        // 发送删除请求
+                        fetch('{% url "delete_hot_topic" %}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'X-CSRFToken': getCookie('csrftoken')
+                            },
+                            body: new URLSearchParams({
+                                'topic_id': topicId
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                showToast('热搜已删除');
+                                // 移除所有具有相同ID的热搜卡片（可能同时存在于TOP榜和最近热搜中）
+                                const topicCards = document.querySelectorAll(`.hot-topic-card[data-id="${topicId}"]`);
+                                topicCards.forEach(card => card.remove());
+                            } else {
+                                showToast(data.message || '删除失败，请重试');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            showToast('发生错误，请重试');
+                        });
+                    }
+                });
+            });
+        }
+        
+        // 防止重复提交的标志
+        let isPinRequestPending = false;
+        
+        // 绑定置顶热搜按钮事件
+        function bindPinButtons() {
+            const pinButtons = document.querySelectorAll('.pin-topic');
+            pinButtons.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    // 防止重复点击
+                    if (isPinRequestPending) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return false;
+                    }
+                    
+                    // 设置标志，防止重复提交
+                    isPinRequestPending = true;
+                    
+                    const topicId = this.getAttribute('data-id');
+                    const isPinned = this.getAttribute('data-pinned') === 'true';
+                    const action = isPinned ? '取消置顶' : '置顶';
+                    
+                    // 显示加载状态
+                    const originalText = this.innerHTML;
+                    this.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>${action}中...`;
+                    this.disabled = true;
+                    
+                    // 禁用所有置顶按钮，防止并发操作
+                    const allPinButtons = document.querySelectorAll('.pin-topic');
+                    allPinButtons.forEach(pinBtn => {
+                        pinBtn.disabled = true;
+                        pinBtn.style.pointerEvents = 'none';
+                    });
+                    
                     // 发送置顶请求
                     fetch('{% url "pin_hot_topic" %}', {
                         method: 'POST',
@@ -433,25 +705,97 @@
                             'topic_id': topicId
                         })
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('服务器响应异常: ' + response.status);
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.success) {
                             showToast(data.message);
-                            // 刷新页面以更新排序
+                            
+                            // 更新置顶状态
+                            const newIsPinned = data.is_pinned;
+                            this.setAttribute('data-pinned', newIsPinned ? 'true' : 'false');
+                            
+                            // 获取相关所有DOM元素
+                            const allTopicCards = document.querySelectorAll(`.hot-topic-card[data-id="${topicId}"]`);
+                            
+                            if (newIsPinned) {
+                                // 更新为置顶状态
+                                this.innerHTML = '<i class="bi bi-pin-angle me-2 text-danger"></i>取消置顶';
+                                
+                                // 为所有卡片添加置顶标记
+                                allTopicCards.forEach(card => {
+                                    card.classList.add('pinned');
+                                    const titleElement = card.querySelector('.topic-title h5');
+                                    // 检查是否已经有置顶标签
+                                    if (!titleElement.querySelector('.badge.bg-danger')) {
+                                        const badgeSpan = document.createElement('span');
+                                        badgeSpan.className = 'badge bg-danger me-1';
+                                        badgeSpan.textContent = '置顶';
+                                        titleElement.insertBefore(badgeSpan, titleElement.firstChild);
+                                    }
+                                });
+                            } else {
+                                // 更新为未置顶状态
+                                this.innerHTML = '<i class="bi bi-pin-angle me-2"></i>置顶';
+                                
+                                // 为所有卡片移除置顶标记
+                                allTopicCards.forEach(card => {
+                                    card.classList.remove('pinned');
+                                    const badge = card.querySelector('.badge.bg-danger');
+                                    if (badge) {
+                                        badge.remove();
+                                    }
+                                });
+                            }
+                            
+                            // 延迟一会后刷新页面以更新顺序
                             setTimeout(() => {
                                 window.location.reload();
                             }, 1000);
                         } else {
+                            // 恢复按钮状态
+                            this.innerHTML = originalText;
+                            this.disabled = false;
+                            
+                            // 重新启用所有置顶按钮
+                            allPinButtons.forEach(pinBtn => {
+                                pinBtn.disabled = false;
+                                pinBtn.style.pointerEvents = 'auto';
+                            });
+                            
                             showToast(data.message || '操作失败，请重试');
                         }
+                        // 重置请求标志
+                        isPinRequestPending = false;
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        showToast('发生错误，请重试');
+                        // 恢复按钮状态
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                        
+                        // 重新启用所有置顶按钮
+                        allPinButtons.forEach(pinBtn => {
+                            pinBtn.disabled = false;
+                            pinBtn.style.pointerEvents = 'auto';
+                        });
+                        
+                        showToast('操作失败: ' + error.message);
+                        // 重置请求标志
+                        isPinRequestPending = false;
                     });
-                }
+                });
             });
-        });
+        }
+        
+        // 立即绑定初始页面上的按钮
+        bindLikeButtons();
+        bindDeleteButtons();
+        bindPinButtons();
         
         // 显示弹窗提示
         function showToast(message) {

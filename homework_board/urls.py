@@ -52,5 +52,9 @@ urlpatterns = [
     path("api/hot-topics/delete/", views.delete_hot_topic, name="delete_hot_topic"),
     path("api/hot-topics/pin/", views.pin_hot_topic, name="pin_hot_topic"),
     path("api/hot-topics/like/", views.toggle_hot_topic_like, name="toggle_hot_topic_like"),
+    path("api/hot-topics/recent/", views.get_recent_topics, name="get_recent_topics"),
+    path("api/admin/students/", views.get_admin_students, name="get_admin_students"),
+    path("api/admin/teachers/", views.get_admin_teachers, name="get_admin_teachers"),
+    path("api/admin/assignments/", views.get_admin_assignments, name="get_admin_assignments"),
     url(r'^static/(?P<path>.*)$', static.serve, {'document_root': settings.STATIC_ROOT}, name='static'),
 ]
