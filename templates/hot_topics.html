@@ -406,8 +406,7 @@
 
                                     {% for i in recent_topics.paginator.page_range %}
                                     {% if recent_topics.number == i %}
-                                    <li class="page-item active"><a class="page-link" href="javascript:void(0);">{{ i
-                                        }}</a></li>
+                                    <li class="page-item active"><a class="page-link" href="javascript:void(0);">{{ i }}</a></li>
                                     {% elif i > recent_topics.number|add:'-3' and i < recent_topics.number|add:'3' %}
                                     <li class="page-item"><a class="page-link page-nav" data-page="{{ i }}"
                                                              href="javascript:void(0);">{{ i }}</a></li>
