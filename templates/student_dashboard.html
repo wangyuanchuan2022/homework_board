@@ -154,7 +154,17 @@
                                     <small class="d-block text-muted mt-1 assignment-date">
                                         <i class="bi bi-calendar-event me-1"></i> 起止日期: {{ assignment.start_date|date:"Y-m-d" }} 至 {{ assignment.end_date|date:"Y-m-d" }}
                                     </small>
-                                    <small class="d-block text-muted mt-1 assignment-description">{{ assignment.description|truncatechars:100 }}</small>
+                                    <div class="assignment-description-container">
+                                        <small class="d-block text-muted mt-1 assignment-description">
+                                            <span class="description-preview">{{ assignment.description|truncatechars:100 }}</span>
+                                            <span class="description-full" style="display:none;">{{ assignment.description }}</span>
+                                            {% if assignment.description|length > 100 %}
+                                            <button class="btn btn-sm btn-link toggle-description p-0 mt-1" data-action="expand">
+                                                <i class="bi bi-arrows-expand"></i> 展开
+                                            </button>
+                                            {% endif %}
+                                        </small>
+                                    </div>
                                 </a>
                             </div>
                         </div>

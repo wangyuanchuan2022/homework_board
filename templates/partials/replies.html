@@ -1,0 +1,63 @@
+{% if replies %}
+    {% for reply in replies %}
+        <div class="comment-card is-reply card mb-2" id="comment-{{ reply.id }}">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="comment-avatar me-3">
+                        {% if reply.is_anonymous %}
+                            <i class="bi bi-person"></i>
+                        {% else %}
+                            {{ reply.author.username|first|upper }}
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="mb-1">
+                                    {% if reply.is_anonymous %}
+                                        匿名用户
+                                    {% else %}
+                                        {{ reply.author.username }}
+                                    {% endif %}
+                                </h6>
+                                <div class="comment-meta mb-2">
+                                    <span>{{ reply.created_at|date:"Y-m-d H:i" }}</span>
+                                    <span class="badge bg-light text-dark">{{ reply.likes_count }}个赞</span>
+                                    <span class="badge bg-light text-primary">
+                                        <i class="bi bi-graph-up me-1"></i>热度 {{ reply.heat_score|floatformat:1 }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="like-btn comment-like-btn {% if reply.id in user_liked_comments %}liked{% endif %}" 
+                                 data-id="{{ reply.id }}">
+                                <i class="bi {% if reply.id in user_liked_comments %}bi-heart-fill{% else %}bi-heart{% endif %} me-1"></i>
+                                <span class="likes-count">{{ reply.likes_count }}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 引用原评论 -->
+                        <div class="comment-quote">
+                            <small class="text-muted">
+                                回复 
+                                {% if parent_comment.is_anonymous %}
+                                    匿名用户
+                                {% else %}
+                                    {{ parent_comment.author.username }}
+                                {% endif %}:
+                            </small>
+                            <div>{{ parent_comment.content|truncatechars:50 }}</div>
+                        </div>
+                        
+                        <div class="comment-content mb-3">
+                            {{ reply.content }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="text-center py-2">
+        <p class="mb-0 text-muted">暂无回复</p>
+    </div>
+{% endif %} 

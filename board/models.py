@@ -100,22 +100,31 @@ class HotTopic(models.Model):
     @property
     def likes_count(self):
         return self.likes.count()
+    
+    @property
+    def comments_count(self):
+        return self.comments.count()
 
     @property
     def heat_score(self):
-        """计算热度分数"""
-        initial_heat = 10  # 初始热度
+        """计算热度分数：(5 + 点赞数 + 所有评论的热度总和*2) * e^(-k*(t-t0))
+        其中t为现在时间，t0为发布时间，按天计算
+        """
+        # 获取点赞数
         likes = self.likes_count
-
+        
+        # 获取所有评论的热度总和
+        comments_heat = sum(comment.heat_score for comment in self.comments.all())
+        
         # 计算发布至今的天数
-        time_diff = timezone.now().date() - self.created_at.date()
-        days = time_diff.days
-
+        time_diff = timezone.now() - self.created_at
+        days = time_diff.days + time_diff.seconds / 86400  # 精确到秒的天数
+        
         # 衰减因子k，可以根据需要调整
-        k = 0.1
-
-        # 计算热度
-        heat = (initial_heat + likes) * math.exp(-k * days)
+        k = -0.1  # 负值表示随时间衰减
+        
+        # 计算热度：(5 + 点赞数 + 所有评论的热度总和) * e^(k*(t-t0))
+        heat = (5 + likes + comments_heat) * math.exp(k * days)
         return heat
 
 
@@ -132,3 +141,66 @@ class HotTopicLike(models.Model):
 
     def __str__(self):
         return f"{self.user.username} 点赞了 {self.topic.title}"
+
+
+class Comment(models.Model):
+    """热搜评论模型"""
+    topic = models.ForeignKey(HotTopic, on_delete=models.CASCADE, related_name='comments', verbose_name="所属热搜")
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments', verbose_name="评论者")
+    content = models.TextField(verbose_name="评论内容")
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies', verbose_name="引用评论")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="评论时间")
+    is_anonymous = models.BooleanField(default=False, verbose_name="是否匿名")
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "评论"
+        verbose_name_plural = "评论"
+
+    def __str__(self):
+        return f"{self.author.username} 评论了 {self.topic.title}"
+    
+    @property
+    def likes_count(self):
+        """获取评论点赞数"""
+        return self.likes.count()
+    
+    @property
+    def replies_count(self):
+        """获取回复数"""
+        return self.replies.count()
+    
+    @property
+    def heat_score(self):
+        """计算评论热度分数：(点赞数 + 回复数*2) * e^(-k*(t-t0))
+        其中t为现在时间，t0为发布时间，按天计算
+        """
+        # 获取点赞数和回复数
+        likes = self.likes_count
+        replies = self.replies_count
+        
+        # 计算发布至今的天数
+        time_diff = timezone.now() - self.created_at
+        days = time_diff.days + time_diff.seconds / 86400  # 精确到秒的天数
+        
+        # 衰减因子k，可以根据需要调整
+        k = -0.15  # 负值表示随时间衰减，评论的衰减可以比热搜快一些
+        
+        # 计算热度：(点赞数 + 回复数) * e^(k*(t-t0))
+        heat = (likes + replies) * math.exp(k * days)
+        return heat
+
+
+class CommentLike(models.Model):
+    """评论点赞记录"""
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='likes', verbose_name="评论")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comment_likes', verbose_name="用户")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="点赞时间")
+
+    class Meta:
+        unique_together = ['comment', 'user']
+        verbose_name = "评论点赞"
+        verbose_name_plural = "评论点赞"
+
+    def __str__(self):
+        return f"{self.user.username} 点赞了评论 {self.comment.id}"

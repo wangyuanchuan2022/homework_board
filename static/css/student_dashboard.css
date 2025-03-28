@@ -340,5 +340,34 @@
 .bg-warning-subtle:hover {
     background-color: #fff1756d !important;
 }
+
+.assignment-description-container {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.assignment-description {
+    line-height: 1.5;
+}
+
+.description-preview, .description-full {
+    transition: opacity 0.3s ease;
+}
+
+.toggle-description {
+    color: var(--primary-color);
+    font-size: 0.85rem;
+    padding: 2px 5px !important;
+    transition: all 0.2s ease;
+}
+
+.toggle-description:hover {
+    background-color: rgba(var(--primary-rgb), 0.1);
+    transform: translateY(-1px);
+}
+
+.toggle-description i {
+    font-size: 0.75rem;
+}
     
     

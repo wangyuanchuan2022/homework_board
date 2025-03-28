@@ -250,7 +250,7 @@
                                                         {% if topic.is_pinned %}
                                                         <span class="badge bg-danger me-1">置顶</span>
                                                         {% endif %}
-                                                        <span>{{ topic.title }}</span>
+                                                        <a href="{% url 'hot_topic_detail' topic.id %}" class="text-decoration-none">{{ topic.title }}</a>
                                                     </h5>
                                                 </div>
                                                 {% if request.user == topic.author or request.user.user_type == 'admin' %}
@@ -336,7 +336,7 @@
                                                 {% if topic.is_pinned %}
                                                 <span class="badge bg-danger me-1">置顶</span>
                                                 {% endif %}
-                                                <span>{{ topic.title }}</span>
+                                                <a href="{% url 'hot_topic_detail' topic.id %}" class="text-decoration-none">{{ topic.title }}</a>
                                             </h5>
                                         </div>
                                         {% if request.user == topic.author or request.user.user_type == 'admin' %}

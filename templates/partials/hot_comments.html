@@ -1,0 +1,84 @@
+{% if hot_comments %}
+    {% for comment in hot_comments %}
+        <div class="comment-card card mb-3" id="comment-{{ comment.id }}">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="comment-avatar me-3">
+                        {% if comment.is_anonymous %}
+                            <i class="bi bi-person"></i>
+                        {% else %}
+                            {{ comment.author.username|first|upper }}
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="mb-1">
+                                    {% if comment.is_anonymous %}
+                                        匿名用户
+                                    {% else %}
+                                        {{ comment.author.username }}
+                                    {% endif %}
+                                </h6>
+                                <div class="comment-meta mb-2">
+                                    <span>{{ comment.created_at|date:"Y-m-d H:i" }}</span>
+                                    <span class="badge bg-light text-dark">{{ comment.likes_count }}个赞</span>
+                                    {% if comment.replies_count > 0 %}
+                                        <span class="badge bg-light text-dark">{{ comment.replies_count }}个回复</span>
+                                    {% endif %}
+                                    <span class="badge bg-light text-primary">
+                                        <i class="bi bi-graph-up me-1"></i>热度 {{ comment.heat_score|floatformat:1 }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="like-btn comment-like-btn {% if comment.id in user_liked_comments %}liked{% endif %}" 
+                                 data-id="{{ comment.id }}">
+                                <i class="bi {% if comment.id in user_liked_comments %}bi-heart-fill{% else %}bi-heart{% endif %} me-1"></i>
+                                <span class="likes-count">{{ comment.likes_count }}</span>
+                            </div>
+                        </div>
+                        <div class="comment-content mb-3">
+                            {{ comment.content }}
+                        </div>
+                        <div class="comment-actions">
+                            <a href="javascript:void(0);" class="reply-btn text-primary" data-id="{{ comment.id }}">
+                                <i class="bi bi-reply me-1"></i>回复
+                            </a>
+                            {% if comment.replies_count > 0 %}
+                                <a href="javascript:void(0);" class="view-replies-btn text-secondary" data-id="{{ comment.id }}">
+                                    <i class="bi bi-chat-square-text me-1"></i>查看{{ comment.replies_count }}条回复
+                                </a>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- 回复评论表单，默认隐藏 -->
+                        <div class="reply-form mt-3" id="reply-form-{{ comment.id }}" style="display: none;">
+                            <form class="replyCommentForm" data-parent-id="{{ comment.id }}" data-topic-id="{{ topic.id }}">
+                                <div class="mb-3">
+                                    <textarea class="form-control reply-content" rows="2" placeholder="回复 {% if comment.is_anonymous %}匿名用户{% else %}{{ comment.author.username }}{% endif %}" required></textarea>
+                                </div>
+                                <div class="mb-2 form-check">
+                                    <input class="form-check-input is-anonymous-reply" type="checkbox" id="isAnonymousReply-{{ comment.id }}">
+                                    <label class="form-check-label" for="isAnonymousReply-{{ comment.id }}">匿名回复</label>
+                                </div>
+                                <div class="d-flex justify-content-end">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-2 cancel-reply-btn">取消</button>
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-send me-1"></i>发送回复
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- 回复列表容器，将通过AJAX加载 -->
+                        <div class="replies-container mt-3" id="replies-container-{{ comment.id }}"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="text-center py-4">
+        <p class="mb-0">暂无热门评论，来发表第一条评论吧！</p>
+    </div>
+{% endif %} 

@@ -139,6 +139,12 @@ document.addEventListener('DOMContentLoaded', function () {
             link.parentNode.replaceChild(newLink, link);
         });
 
+        // 移除展开/收起按钮的事件
+        document.querySelectorAll('.toggle-description').forEach(button => {
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
+        });
+
         // 移除复选框的事件
         document.querySelectorAll('.assignment-checkbox').forEach(checkbox => {
             const newCheckbox = checkbox.cloneNode(true);
@@ -254,6 +260,33 @@ document.addEventListener('DOMContentLoaded', function () {
                 const date = this.dataset.date;
                 const assignmentId = this.dataset.assignmentId;
                 updateContent(date, assignmentId);
+            });
+        });
+
+        // 绑定展开/收起描述按钮事件
+        document.querySelectorAll('.toggle-description').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation(); // 阻止冒泡，避免触发作业链接的点击事件
+                
+                const container = this.closest('.assignment-description');
+                const preview = container.querySelector('.description-preview');
+                const full = container.querySelector('.description-full');
+                const action = this.getAttribute('data-action');
+                
+                if (action === 'expand') {
+                    // 展开操作
+                    preview.style.display = 'none';
+                    full.style.display = 'inline';
+                    this.innerHTML = '<i class="bi bi-arrows-collapse"></i> 收起';
+                    this.setAttribute('data-action', 'collapse');
+                } else {
+                    // 收起操作
+                    preview.style.display = 'inline';
+                    full.style.display = 'none';
+                    this.innerHTML = '<i class="bi bi-arrows-expand"></i> 展开';
+                    this.setAttribute('data-action', 'expand');
+                }
             });
         });
 

@@ -1,0 +1,757 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ topic.title }} - 热搜详情{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 热搜详情卡片样式 */
+    .topic-detail-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid #dc3545;
+        position: relative;
+    }
+    
+    /* 评论区样式 */
+    .comment-card {
+        transition: all 0.2s ease;
+        border-left: 3px solid transparent;
+    }
+    
+    .comment-card:hover {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+    
+    .comment-card.is-reply {
+        margin-left: 3rem;
+        border-left-color: #6c757d;
+    }
+    
+    .comment-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #6c757d;
+    }
+    
+    .comment-content {
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+    
+    .comment-quote {
+        background-color: rgba(0, 0, 0, 0.05);
+        border-left: 3px solid #6c757d;
+        margin-bottom: 0.5rem;
+        padding: 0.5rem;
+        font-size: 0.9rem;
+        border-radius: 0.25rem;
+    }
+    
+    .comment-meta {
+        font-size: 0.85rem;
+        color: #6c757d;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .comment-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+    
+    .like-btn {
+        padding: 3px 8px;
+        border-radius: 20px;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        background-color: rgba(0,0,0,0.03);
+        font-size: 0.85rem;
+    }
+    
+    .like-btn:hover {
+        transform: scale(1.05);
+        background-color: rgba(0,0,0,0.08);
+    }
+    
+    .like-btn.liked {
+        color: #dc3545;
+    }
+    
+    .like-btn.liked:hover {
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+    
+    .reply-btn {
+        cursor: pointer;
+        font-size: 0.85rem;
+    }
+    
+    .reply-btn:hover {
+        text-decoration: underline;
+    }
+    
+    .comment-form-container {
+        transition: max-height 0.3s ease;
+        max-height: 0;
+        overflow: hidden;
+    }
+    
+    .comment-form-container.active {
+        max-height: 300px; /* 足够容纳表单的高度 */
+    }
+    
+    .heat-badge {
+        background-color: rgba(255, 193, 7, 0.2);
+        color: #fd7e14;
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 0.75rem;
+    }
+    
+    .section-divider {
+        display: flex;
+        align-items: center;
+        margin: 1.5rem 0;
+    }
+    
+    .section-divider:before, .section-divider:after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .section-divider .divider-text {
+        padding: 0 1rem;
+        font-weight: 500;
+        color: #6c757d;
+    }
+    
+    /* 分页导航高亮效果 */
+    .page-nav {
+        transition: all 0.3s ease;
+    }
+    
+    .page-nav:hover {
+        background-color: rgba(var(--primary-rgb), 0.1);
+        transform: translateY(-2px);
+    }
+    
+    /* 为评论楼层添加样式 */
+    .floor-badge {
+        font-size: 0.75rem;
+        color: #6c757d;
+        background-color: #f8f9fa;
+        padding: 2px 6px;
+        border-radius: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0"><i class="bi bi-chat-dots text-danger me-2"></i>热搜详情</h2>
+                <a href="{% url 'hot_topics' %}" class="btn btn-primary">
+                    <i class="bi bi-arrow-left me-1"></i>返回热搜榜
+                </a>
+            </div>
+            <p class="text-muted">加入讨论，分享你的观点</p>
+        </div>
+    </div>
+    
+    <!-- 热搜详情 -->
+    <div class="row mb-4">
+        <div class="col-lg-8 col-xl-7 mx-auto">
+            <div class="card topic-detail-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-white">热搜详情</h5>
+                    {% if topic.is_pinned %}
+                    <span class="badge bg-danger">置顶</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <h3 class="card-title mb-3">{{ topic.title }}</h3>
+                    
+                    {% if topic.content %}
+                    <div class="card-text mb-4">{{ topic.content }}</div>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <small class="text-muted">
+                                {% if topic.is_anonymous %}
+                                匿名人士
+                                {% else %}
+                                {{ topic.author.username }}
+                                {% endif %}
+                                 · {{ topic.created_at|date:"Y-m-d H:i" }}
+                            </small>
+                            <small class="heat-badge">
+                                <i class="bi bi-graph-up me-1"></i>热度 {{ heat_score|floatformat:1 }}
+                            </small>
+                        </div>
+                        <div class="like-btn {% if topic.id in user_liked_topics %}liked{% endif %}" data-id="{{ topic.id }}">
+                            <i class="bi {% if topic.id in user_liked_topics %}bi-heart-fill{% else %}bi-heart{% endif %} me-1"></i>
+                            <span class="likes-count">{{ topic.likes_count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 评论表单 -->
+    <div class="row mb-4">
+        <div class="col-lg-8 col-xl-7 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0 text-white">发表评论</h5>
+                </div>
+                <div class="card-body">
+                    <form id="mainCommentForm" data-topic-id="{{ topic.id }}">
+                        <div class="mb-3">
+                            <textarea class="form-control" id="commentContent" rows="3" placeholder="发表你的评论..." required></textarea>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input class="form-check-input" id="isAnonymousComment" type="checkbox">
+                            <label class="form-check-label" for="isAnonymousComment">匿名评论</label>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send me-1"></i>发布评论
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 热门评论区域 -->
+    <div class="row mb-4">
+        <div class="col-lg-8 col-xl-7 mx-auto">
+            <div class="section-divider">
+                <span class="divider-text"><i class="bi bi-fire text-danger me-1"></i>热门评论</span>
+            </div>
+            <div id="hot-comments-container">
+                <!-- 热门评论将通过AJAX加载 -->
+                <div class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                    <p class="mt-2 mb-0">正在加载热门评论...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 全部评论区域 -->
+    <div class="row mb-4">
+        <div class="col-lg-8 col-xl-7 mx-auto">
+            <div class="section-divider">
+                <span class="divider-text"><i class="bi bi-chat-text text-primary me-1"></i>全部评论</span>
+            </div>
+            <div id="all-comments-container">
+                <!-- 所有评论将通过AJAX加载 -->
+                <div class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                    <p class="mt-2 mb-0">正在加载评论...</p>
+                </div>
+            </div>
+            
+            <!-- 评论分页 -->
+            <div id="comments-pagination"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 回复评论的隐藏模板 -->
+<template id="reply-form-template">
+    <div class="reply-form-container mt-3 mb-2">
+        <form class="reply-form">
+            <div class="mb-2">
+                <textarea class="form-control form-control-sm" rows="2" placeholder="回复此评论..." required></textarea>
+            </div>
+            <div class="mb-2 form-check">
+                <input class="form-check-input" type="checkbox" id="isAnonymousReply">
+                <label class="form-check-label" for="isAnonymousReply">匿名回复</label>
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary cancel-reply">取消</button>
+                <button type="submit" class="btn btn-sm btn-primary submit-reply">
+                    <i class="bi bi-reply me-1"></i>回复
+                </button>
+            </div>
+        </form>
+    </div>
+</template>
+
+<!-- 弹窗提示 -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="toast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">提示</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 获取必要的容器元素
+        const hotCommentsContainer = document.getElementById('hot-comments-container');
+        const allCommentsContainer = document.getElementById('all-comments-container');
+        const commentsPagination = document.getElementById('comments-pagination');
+        const topicId = '{{ topic.id }}';
+        
+        // 获取热门评论和第一页的所有评论
+        loadHotComments();
+        loadComments(1);
+        
+        // 绑定主评论表单提交事件
+        const mainCommentForm = document.getElementById('mainCommentForm');
+        if (mainCommentForm) {
+            mainCommentForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                submitComment();
+            });
+        }
+        
+        // 绑定点赞按钮事件
+        bindTopicLikeButton();
+        
+        // 提交主评论
+        function submitComment() {
+            const content = document.getElementById('commentContent').value.trim();
+            const isAnonymous = document.getElementById('isAnonymousComment').checked;
+            
+            if (!content) {
+                showToast('评论内容不能为空');
+                return;
+            }
+            
+            // 禁用提交按钮，防止重复提交
+            const submitBtn = mainCommentForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>提交中...';
+            submitBtn.disabled = true;
+            
+            // 发送创建评论请求
+            fetch('{% url "create_comment" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: new URLSearchParams({
+                    'topic_id': topicId,
+                    'content': content,
+                    'is_anonymous': isAnonymous
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 清空表单
+                    document.getElementById('commentContent').value = '';
+                    document.getElementById('isAnonymousComment').checked = false;
+                    showToast('评论发布成功!');
+                    
+                    // 重新加载评论和热门评论
+                    loadHotComments();
+                    loadComments(1);
+                } else {
+                    showToast(data.message || '评论失败，请重试');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('发生错误，请重试');
+            })
+            .finally(() => {
+                // 恢复提交按钮状态
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+            });
+        }
+        
+        // 加载热门评论
+        function loadHotComments() {
+            // 显示加载状态
+            hotCommentsContainer.innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">加载中...</span></div><p class="mt-2 mb-0">正在加载热门评论...</p></div>';
+            
+            // 发送请求获取热门评论
+            fetch(`{% url "get_hot_comments" %}?topic_id=${topicId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 更新热门评论内容
+                        hotCommentsContainer.innerHTML = data.html;
+                        
+                        // 绑定新加载的热门评论中的各种按钮
+                        bindCommentActions(hotCommentsContainer);
+                    } else {
+                        hotCommentsContainer.innerHTML = '<div class="text-center py-3"><p class="mb-0">加载热门评论失败，<a href="javascript:void(0);" onclick="loadHotComments()">点击重试</a></p></div>';
+                        showToast(data.message || '加载热门评论失败');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    hotCommentsContainer.innerHTML = '<div class="text-center py-3"><p class="mb-0">加载热门评论失败，<a href="javascript:void(0);" onclick="loadHotComments()">点击重试</a></p></div>';
+                    showToast('加载热门评论时发生错误');
+                });
+        }
+        
+        // 加载指定页码的评论
+        function loadComments(page) {
+            // 显示加载状态
+            allCommentsContainer.innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">加载中...</span></div><p class="mt-2 mb-0">正在加载评论...</p></div>';
+            
+            // 发送请求获取评论
+            fetch(`{% url "get_comments" %}?topic_id=${topicId}&page=${page}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 更新评论内容
+                        allCommentsContainer.innerHTML = data.html;
+                        
+                        // 绑定新加载的评论中的各种按钮
+                        bindCommentActions(allCommentsContainer);
+                        
+                        // 绑定分页按钮事件
+                        const pageNavs = allCommentsContainer.querySelectorAll('.comment-page-nav');
+                        pageNavs.forEach(nav => {
+                            nav.addEventListener('click', function() {
+                                const pageNum = this.getAttribute('data-page');
+                                loadComments(pageNum);
+                            });
+                        });
+                    } else {
+                        allCommentsContainer.innerHTML = '<div class="text-center py-3"><p class="mb-0">加载评论失败，<a href="javascript:void(0);" onclick="loadComments(1)">点击重试</a></p></div>';
+                        showToast(data.message || '加载评论失败');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    allCommentsContainer.innerHTML = '<div class="text-center py-3"><p class="mb-0">加载评论失败，<a href="javascript:void(0);" onclick="loadComments(1)">点击重试</a></p></div>';
+                    showToast('加载评论时发生错误');
+                });
+        }
+        
+        // 绑定评论相关的交互按钮
+        function bindCommentActions(container) {
+            // 绑定评论点赞按钮
+            const commentLikeBtns = container.querySelectorAll('.comment-like-btn');
+            commentLikeBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    likeComment(this);
+                });
+            });
+            
+            // 绑定回复按钮
+            const replyBtns = container.querySelectorAll('.reply-btn');
+            replyBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const commentId = this.getAttribute('data-id');
+                    toggleReplyForm(commentId);
+                });
+            });
+            
+            // 绑定取消回复按钮
+            const cancelReplyBtns = container.querySelectorAll('.cancel-reply-btn');
+            cancelReplyBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const form = this.closest('.reply-form');
+                    form.style.display = 'none';
+                });
+            });
+            
+            // 绑定回复表单提交
+            const replyForms = container.querySelectorAll('.replyCommentForm');
+            replyForms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    submitReply(this);
+                });
+            });
+            
+            // 绑定查看回复按钮
+            const viewRepliesBtns = container.querySelectorAll('.view-replies-btn');
+            viewRepliesBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const commentId = this.getAttribute('data-id');
+                    loadReplies(commentId);
+                });
+            });
+        }
+        
+        // 切换回复表单的显示/隐藏
+        function toggleReplyForm(commentId) {
+            const replyForm = document.getElementById(`reply-form-${commentId}`);
+            
+            // 隐藏所有其他回复表单
+            document.querySelectorAll('.reply-form').forEach(form => {
+                if (form.id !== `reply-form-${commentId}`) {
+                    form.style.display = 'none';
+                }
+            });
+            
+            // 切换当前回复表单的显示状态
+            replyForm.style.display = replyForm.style.display === 'none' ? 'block' : 'none';
+            
+            // 如果显示表单，则聚焦到文本框
+            if (replyForm.style.display === 'block') {
+                replyForm.querySelector('.reply-content').focus();
+            }
+        }
+        
+        // 加载评论的回复
+        function loadReplies(commentId) {
+            const repliesContainer = document.getElementById(`replies-container-${commentId}`);
+            
+            // 检查容器是否存在
+            if (!repliesContainer) {
+                console.error(`回复容器 replies-container-${commentId} 不存在`);
+                return; // 如果容器不存在，则退出函数
+            }
+            
+            // 显示加载状态
+            repliesContainer.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><span class="ms-2">加载回复中...</span></div>';
+            
+            // 发送请求获取回复
+            fetch(`{% url "get_replies" %}?comment_id=${commentId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 更新回复内容
+                        repliesContainer.innerHTML = data.html;
+                        
+                        // 绑定新加载的回复中的各种按钮
+                        bindCommentActions(repliesContainer);
+                    } else {
+                        repliesContainer.innerHTML = '<div class="text-center py-2"><p class="mb-0 text-muted">加载回复失败，<a href="javascript:void(0);" onclick="loadReplies(' + commentId + ')">重试</a></p></div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    repliesContainer.innerHTML = '<div class="text-center py-2"><p class="mb-0 text-muted">加载回复失败，<a href="javascript:void(0);" onclick="loadReplies(' + commentId + ')">重试</a></p></div>';
+                });
+        }
+        
+        // 提交回复评论
+        function submitReply(form) {
+            const parentId = form.getAttribute('data-parent-id');
+            const content = form.querySelector('.reply-content').value.trim();
+            const isAnonymous = form.querySelector('.is-anonymous-reply').checked;
+            
+            if (!content) {
+                showToast('回复内容不能为空');
+                return;
+            }
+            
+            // 禁用提交按钮，防止重复提交
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>发送中...';
+            submitBtn.disabled = true;
+            
+            // 发送创建回复请求
+            fetch('{% url "create_comment" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: new URLSearchParams({
+                    'topic_id': topicId,
+                    'parent_id': parentId,
+                    'content': content,
+                    'is_anonymous': isAnonymous
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 清空表单并隐藏
+                    form.querySelector('.reply-content').value = '';
+                    form.querySelector('.is-anonymous-reply').checked = false;
+                    form.closest('.reply-form').style.display = 'none';
+                    showToast('回复发布成功!');
+                    
+                    // 重新加载评论和热门评论
+                    loadHotComments();
+                    loadComments(1);
+                    
+                    // 检查容器是否存在，然后再加载回复
+                    const repliesContainer = document.getElementById(`replies-container-${parentId}`);
+                    if (repliesContainer) {
+                        loadReplies(parentId);
+                    }
+                } else {
+                    showToast(data.message || '回复失败，请重试');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('发生错误，请重试');
+            })
+            .finally(() => {
+                // 恢复提交按钮状态
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+            });
+        }
+        
+        // 点赞/取消点赞评论
+        function likeComment(likeBtn) {
+            const commentId = likeBtn.getAttribute('data-id');
+            const likeIcon = likeBtn.querySelector('i');
+            const likesCount = likeBtn.querySelector('.likes-count');
+            const originalIcon = likeIcon.className;
+            
+            // 显示加载状态
+            likeIcon.className = 'bi bi-arrow-repeat spin-animation me-1';
+            
+            // 发送点赞请求
+            fetch('{% url "toggle_comment_like" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: new URLSearchParams({
+                    'comment_id': commentId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 更新点赞数
+                    likesCount.textContent = data.likes_count;
+                    
+                    // 更新图标
+                    if (data.action === 'liked') {
+                        likeIcon.className = 'bi bi-heart-fill me-1';
+                        likeBtn.classList.add('liked');
+                    } else {
+                        likeIcon.className = 'bi bi-heart me-1';
+                        likeBtn.classList.remove('liked');
+                    }
+                    
+                    showToast(data.message);
+                } else {
+                    // 恢复原状
+                    likeIcon.className = originalIcon;
+                    showToast('操作失败，请重试');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // 恢复原状
+                likeIcon.className = originalIcon;
+                showToast('操作失败，请重试');
+            });
+        }
+        
+        // 绑定热搜点赞按钮
+        function bindTopicLikeButton() {
+            const likeBtn = document.querySelector('.like-btn[data-id="' + topicId + '"]');
+            if (likeBtn) {
+                likeBtn.addEventListener('click', function() {
+                    const likeIcon = this.querySelector('i');
+                    const likesCount = this.querySelector('.likes-count');
+                    const originalIcon = likeIcon.className;
+                    
+                    // 显示加载状态
+                    likeIcon.className = 'bi bi-arrow-repeat spin-animation me-1';
+                    
+                    // 发送点赞请求
+                    fetch('{% url "toggle_hot_topic_like" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: new URLSearchParams({
+                            'topic_id': topicId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // 更新点赞数
+                            likesCount.textContent = data.likes_count;
+                            
+                            // 更新图标
+                            if (data.action === 'liked') {
+                                likeIcon.className = 'bi bi-heart-fill me-1';
+                                this.classList.add('liked');
+                            } else {
+                                likeIcon.className = 'bi bi-heart me-1';
+                                this.classList.remove('liked');
+                            }
+                            
+                            showToast(data.message);
+                        } else {
+                            // 恢复原状
+                            likeIcon.className = originalIcon;
+                            showToast('操作失败，请重试');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        // 恢复原状
+                        likeIcon.className = originalIcon;
+                        showToast('操作失败，请重试');
+                    });
+                });
+            }
+        }
+        
+        // 显示提示框
+        function showToast(message) {
+            const toastEl = document.getElementById('toast');
+            const toastBody = toastEl.querySelector('.toast-body');
+            toastBody.textContent = message;
+            
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+        
+        // 获取CSRF Token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
+{% endblock %} 

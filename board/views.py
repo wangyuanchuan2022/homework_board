@@ -11,10 +11,11 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Count
 
 from .forms import CustomUserCreationForm, CustomAuthenticationForm, AssignmentForm, BatchAssignmentForm, \
     UpdateUsernameForm, ChangePasswordForm
-from .models import User, Subject, Assignment, CompletionRecord, HotTopic, HotTopicLike
+from .models import User, Subject, Assignment, CompletionRecord, HotTopic, HotTopicLike, Comment, CommentLike
 
 
 def user_type_required(user_types):
@@ -1342,3 +1343,248 @@ def get_admin_assignments(request):
 
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
+
+@user_type_required(['student', 'admin'])
+def hot_topic_detail_view(request, topic_id):
+    """热搜详情页面视图"""
+    try:
+        topic = HotTopic.objects.get(id=topic_id)
+    except HotTopic.DoesNotExist:
+        messages.error(request, '热搜不存在')
+        return redirect('hot_topics')
+    
+    # 获取热搜热度
+    heat_score = topic.heat_score
+    
+    # 获取用户已点赞的热搜ID列表
+    if request.user.is_authenticated:
+        user_liked_topics = list(HotTopicLike.objects.filter(
+            user=request.user
+        ).values_list('topic_id', flat=True))
+        
+        # 获取用户已点赞的评论ID列表
+        user_liked_comments = list(CommentLike.objects.filter(
+            user=request.user
+        ).values_list('comment_id', flat=True))
+    else:
+        user_liked_topics = []
+        user_liked_comments = []
+    
+    context = {
+        'topic': topic,
+        'heat_score': heat_score,
+        'user_liked_topics': user_liked_topics,
+        'user_liked_comments': user_liked_comments,
+    }
+    
+    return render(request, 'hot_topic_detail.html', context)
+
+
+@user_type_required(['student', 'admin'])
+def create_comment(request):
+    """创建评论"""
+    if request.method == 'POST':
+        topic_id = request.POST.get('topic_id')
+        parent_id = request.POST.get('parent_id')  # 可能为空，表示这是顶级评论
+        content = request.POST.get('content', '').strip()
+        is_anonymous = request.POST.get('is_anonymous') == 'true'
+        
+        if not content:
+            return JsonResponse({'success': False, 'message': '评论内容不能为空'})
+        
+        try:
+            topic = HotTopic.objects.get(id=topic_id)
+            
+            # 检查是否是回复
+            parent = None
+            if parent_id:
+                try:
+                    parent = Comment.objects.get(id=parent_id)
+                except Comment.DoesNotExist:
+                    return JsonResponse({'success': False, 'message': '回复的评论不存在'})
+            
+            # 创建评论
+            Comment.objects.create(
+                topic=topic,
+                author=request.user,
+                content=content,
+                parent=parent,
+                is_anonymous=is_anonymous
+            )
+            
+            return JsonResponse({'success': True})
+        except HotTopic.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '热搜不存在'})
+    
+    return JsonResponse({'success': False, 'message': '请求方法错误'})
+
+
+@user_type_required(['student', 'admin'])
+def toggle_comment_like(request):
+    """点赞/取消点赞评论"""
+    if request.method == 'POST':
+        comment_id = request.POST.get('comment_id')
+        
+        try:
+            comment = Comment.objects.get(id=comment_id)
+            
+            # 检查用户是否已点赞
+            like_exists = CommentLike.objects.filter(comment=comment, user=request.user).exists()
+            
+            if like_exists:
+                # 如果已点赞，则取消点赞
+                CommentLike.objects.filter(comment=comment, user=request.user).delete()
+                action = 'unliked'
+                message = '已取消点赞'
+            else:
+                # 如果未点赞，则添加点赞
+                CommentLike.objects.create(comment=comment, user=request.user)
+                action = 'liked'
+                message = '已点赞'
+            
+            # 获取最新点赞数
+            likes_count = comment.likes_count
+            
+            return JsonResponse({
+                'success': True, 
+                'action': action, 
+                'likes_count': likes_count,
+                'message': message
+            })
+        except Comment.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '评论不存在'})
+    
+    return JsonResponse({'success': False, 'message': '请求方法错误'})
+
+
+@user_type_required(['student', 'admin'])
+def get_hot_comments(request):
+    """获取热门评论（按热度排序的前5条）"""
+    topic_id = request.GET.get('topic_id')
+    
+    try:
+        topic = HotTopic.objects.get(id=topic_id)
+        
+        # 只获取顶级评论（非回复）
+        comments = Comment.objects.filter(
+            topic=topic, 
+            parent__isnull=True
+        )
+        
+        # 计算每个评论的热度分数并按热度排序
+        comments_with_score = [(comment, comment.heat_score) for comment in comments]
+        
+        # 按热度分数降序排序
+        sorted_comments = sorted(comments_with_score, key=lambda x: -x[1])
+        
+        # 取前5条热门评论
+        hot_comments = [comment for comment, _ in sorted_comments[:5]]
+        
+        # 获取用户已点赞的评论ID列表
+        if request.user.is_authenticated:
+            user_liked_comments = list(CommentLike.objects.filter(
+                user=request.user
+            ).values_list('comment_id', flat=True))
+        else:
+            user_liked_comments = []
+        
+        # 渲染部分模板
+        html_content = render(request, 'partials/hot_comments.html', {
+            'hot_comments': hot_comments,
+            'user_liked_comments': user_liked_comments,
+            'topic': topic
+        }).content.decode('utf-8')
+        
+        return JsonResponse({
+            'success': True,
+            'html': html_content
+        })
+    except HotTopic.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '热搜不存在'})
+
+
+@user_type_required(['student', 'admin'])
+def get_comments(request):
+    """分页获取所有评论"""
+    topic_id = request.GET.get('topic_id')
+    page = request.GET.get('page', 1)
+    
+    try:
+        topic = HotTopic.objects.get(id=topic_id)
+        
+        # 获取顶级评论（非回复）
+        comments_list = Comment.objects.filter(
+            topic=topic,
+            parent__isnull=True
+        ).order_by('-created_at')
+        
+        # 创建分页器
+        paginator = Paginator(comments_list, 10)  # 每页10条评论
+        
+        try:
+            comments = paginator.page(page)
+        except:
+            # 如果页码无效，返回第一页
+            comments = paginator.page(1)
+        
+        # 获取用户已点赞的评论ID列表
+        if request.user.is_authenticated:
+            user_liked_comments = list(CommentLike.objects.filter(
+                user=request.user
+            ).values_list('comment_id', flat=True))
+        else:
+            user_liked_comments = []
+        
+        # 渲染部分模板
+        html_content = render(request, 'partials/comments.html', {
+            'comments': comments,
+            'user_liked_comments': user_liked_comments,
+            'topic': topic
+        }).content.decode('utf-8')
+        
+        return JsonResponse({
+            'success': True,
+            'html': html_content,
+            'has_previous': comments.has_previous(),
+            'has_next': comments.has_next(),
+            'current_page': comments.number,
+            'total_pages': paginator.num_pages,
+            'page_range': list(paginator.page_range)
+        })
+    except HotTopic.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '热搜不存在'})
+
+
+@user_type_required(['student', 'admin'])
+def get_replies(request):
+    """获取评论的回复"""
+    comment_id = request.GET.get('comment_id')
+    
+    try:
+        comment = Comment.objects.get(id=comment_id)
+        
+        # 获取所有回复，按创建时间排序
+        replies = Comment.objects.filter(parent=comment).order_by('created_at')
+        
+        # 获取用户已点赞的评论ID列表
+        if request.user.is_authenticated:
+            user_liked_comments = list(CommentLike.objects.filter(
+                user=request.user
+            ).values_list('comment_id', flat=True))
+        else:
+            user_liked_comments = []
+        
+        # 渲染部分模板
+        html_content = render(request, 'partials/replies.html', {
+            'replies': replies,
+            'parent_comment': comment,
+            'user_liked_comments': user_liked_comments,
+            'topic': comment.topic
+        }).content.decode('utf-8')
+        
+        return JsonResponse({
+            'success': True,
+            'html': html_content
+        })
+    except Comment.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '评论不存在'})
