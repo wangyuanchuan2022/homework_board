@@ -27,9 +27,24 @@
         border-left-color: #6c757d;
     }
     
+    /* 删除按钮样式 */
+    .delete-comment-btn {
+        opacity: 0.6;
+        transition: all 0.2s ease;
+    }
+    
+    .comment-card:hover .delete-comment-btn {
+        opacity: 1;
+    }
+    
+    .delete-comment-btn:hover {
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+    
     .comment-avatar {
         width: 40px;
         height: 40px;
+        min-width: 40px; /* 确保头像不会被压缩 */
         border-radius: 50%;
         background-color: #f8f9fa;
         display: flex;
@@ -37,6 +52,7 @@
         justify-content: center;
         font-weight: bold;
         color: #6c757d;
+        flex-shrink: 0; /* 确保头像不会缩小 */
     }
     
     .comment-content {
@@ -155,6 +171,24 @@
         background-color: #f8f9fa;
         padding: 2px 6px;
         border-radius: 10px;
+    }
+    
+    .view-replies-btn {
+        transition: all 0.3s ease;
+    }
+    
+    .view-replies-btn:hover {
+        text-decoration: underline !important;
+    }
+    
+    /* 当按钮显示为"点击收起回复"时的样式 */
+    .view-replies-btn .bi-chat-square-text-fill {
+        color: #0d6efd;
+    }
+    
+    /* 回复容器显示动画 */
+    .replies-container {
+        transition: all 0.3s ease;
     }
 </style>
 {% endblock %}
@@ -467,6 +501,16 @@
                 });
             });
             
+            // 绑定删除评论按钮
+            const deleteCommentBtns = container.querySelectorAll('.delete-comment-btn');
+            deleteCommentBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (confirm('确定要删除这条评论吗？此操作无法撤销。')) {
+                        deleteComment(this.getAttribute('data-id'));
+                    }
+                });
+            });
+            
             // 绑定回复按钮
             const replyBtns = container.querySelectorAll('.reply-btn');
             replyBtns.forEach(btn => {
@@ -499,7 +543,21 @@
             viewRepliesBtns.forEach(btn => {
                 btn.addEventListener('click', function() {
                     const commentId = this.getAttribute('data-id');
-                    loadReplies(commentId);
+                    const repliesContainer = document.getElementById(`replies-container-${commentId}`);
+                    
+                    // 检查容器是否已有内容，如果有就表示回复已加载，这时进行收起操作
+                    if (repliesContainer && repliesContainer.innerHTML.trim() !== '' && 
+                        !repliesContainer.querySelector('.spinner-border') && 
+                        !repliesContainer.querySelector('.text-center.py-2')) {
+                        // 收起回复
+                        repliesContainer.innerHTML = '';
+                        // 恢复按钮文本
+                        const repliesCount = this.getAttribute('data-replies-count');
+                        this.innerHTML = `<i class="bi bi-chat-square-text me-1"></i>查看${repliesCount}条回复`;
+                    } else {
+                        // 加载回复
+                        loadReplies(commentId, this);
+                    }
                 });
             });
         }
@@ -525,7 +583,7 @@
         }
         
         // 加载评论的回复
-        function loadReplies(commentId) {
+        function loadReplies(commentId, viewRepliesBtn) {
             const repliesContainer = document.getElementById(`replies-container-${commentId}`);
             
             // 检查容器是否存在
@@ -545,15 +603,23 @@
                         // 更新回复内容
                         repliesContainer.innerHTML = data.html;
                         
+                        // 更新查看回复按钮的文本
+                        if (viewRepliesBtn) {
+                            // 保存回复数量以便后续恢复按钮文本
+                            const repliesCount = viewRepliesBtn.textContent.match(/\d+/)[0];
+                            viewRepliesBtn.setAttribute('data-replies-count', repliesCount);
+                            viewRepliesBtn.innerHTML = '<i class="bi bi-chat-square-text-fill me-1"></i>点击收起回复';
+                        }
+                        
                         // 绑定新加载的回复中的各种按钮
                         bindCommentActions(repliesContainer);
                     } else {
-                        repliesContainer.innerHTML = '<div class="text-center py-2"><p class="mb-0 text-muted">加载回复失败，<a href="javascript:void(0);" onclick="loadReplies(' + commentId + ')">重试</a></p></div>';
+                        repliesContainer.innerHTML = '<div class="text-center py-2"><p class="mb-0 text-muted">加载回复失败，<a href="javascript:void(0);" onclick="document.querySelector(\'.view-replies-btn[data-id=&quot;' + commentId + '&quot;]\').click()">重试</a></p></div>';
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    repliesContainer.innerHTML = '<div class="text-center py-2"><p class="mb-0 text-muted">加载回复失败，<a href="javascript:void(0);" onclick="loadReplies(' + commentId + ')">重试</a></p></div>';
+                    repliesContainer.innerHTML = '<div class="text-center py-2"><p class="mb-0 text-muted">加载回复失败，<a href="javascript:void(0);" onclick="document.querySelector(\'.view-replies-btn[data-id=&quot;' + commentId + '&quot;]\').click()">重试</a></p></div>';
                 });
         }
         
@@ -604,7 +670,12 @@
                     // 检查容器是否存在，然后再加载回复
                     const repliesContainer = document.getElementById(`replies-container-${parentId}`);
                     if (repliesContainer) {
-                        loadReplies(parentId);
+                        const viewRepliesBtn = document.querySelector(`.view-replies-btn[data-id="${parentId}"]`);
+                        if (viewRepliesBtn) {
+                            loadReplies(parentId, viewRepliesBtn);
+                        } else {
+                            loadReplies(parentId, null);
+                        }
                     }
                 } else {
                     showToast(data.message || '回复失败，请重试');
@@ -668,6 +739,49 @@
                 console.error('Error:', error);
                 // 恢复原状
                 likeIcon.className = originalIcon;
+                showToast('操作失败，请重试');
+            });
+        }
+        
+        // 删除评论
+        function deleteComment(commentId) {
+            fetch('{% url "delete_comment" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: new URLSearchParams({
+                    'comment_id': commentId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message || '评论已删除');
+                    
+                    // 重新加载评论列表
+                    loadHotComments();
+                    loadComments(1);
+                    
+                    // 如果被删除的评论是回复，可能需要重新加载回复列表
+                    const commentElement = document.getElementById(`comment-${commentId}`);
+                    if (commentElement && commentElement.classList.contains('is-reply')) {
+                        const parentComment = commentElement.closest('.replies-container');
+                        if (parentComment) {
+                            const parentId = parentComment.id.replace('replies-container-', '');
+                            const viewRepliesBtn = document.querySelector(`.view-replies-btn[data-id="${parentId}"]`);
+                            if (viewRepliesBtn) {
+                                loadReplies(parentId, viewRepliesBtn);
+                            }
+                        }
+                    }
+                } else {
+                    showToast(data.message || '删除失败，请重试');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
                 showToast('操作失败，请重试');
             });
         }

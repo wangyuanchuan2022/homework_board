@@ -31,10 +31,17 @@
                                     </span>
                                 </div>
                             </div>
-                            <div class="like-btn comment-like-btn {% if comment.id in user_liked_comments %}liked{% endif %}" 
-                                 data-id="{{ comment.id }}">
-                                <i class="bi {% if comment.id in user_liked_comments %}bi-heart-fill{% else %}bi-heart{% endif %} me-1"></i>
-                                <span class="likes-count">{{ comment.likes_count }}</span>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if request.user.user_type == 'admin' or request.user == comment.author %}
+                                <button type="button" class="btn btn-sm btn-light delete-comment-btn" data-id="{{ comment.id }}" title="删除评论">
+                                    <i class="bi bi-trash text-danger"></i>
+                                </button>
+                                {% endif %}
+                                <div class="like-btn comment-like-btn {% if comment.id in user_liked_comments %}liked{% endif %}" 
+                                    data-id="{{ comment.id }}">
+                                    <i class="bi {% if comment.id in user_liked_comments %}bi-heart-fill{% else %}bi-heart{% endif %} me-1"></i>
+                                    <span class="likes-count">{{ comment.likes_count }}</span>
+                                </div>
                             </div>
                         </div>
                         <div class="comment-content mb-3">
@@ -45,7 +52,7 @@
                                 <i class="bi bi-reply me-1"></i>回复
                             </a>
                             {% if comment.replies_count > 0 %}
-                                <a href="javascript:void(0);" class="view-replies-btn text-secondary" data-id="{{ comment.id }}">
+                                <a href="javascript:void(0);" class="view-replies-btn text-secondary" data-id="{{ comment.id }}" data-replies-count="{{ comment.replies_count }}">
                                     <i class="bi bi-chat-square-text me-1"></i>查看{{ comment.replies_count }}条回复
                                 </a>
                             {% endif %}

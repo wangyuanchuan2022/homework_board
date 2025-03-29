@@ -179,6 +179,54 @@
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
     }
+    
+    .pinned {
+        background-color: rgba(255, 0, 0, 0.03);
+    }
+    
+    .pinned .topic-title h5 {
+        font-weight: bold;
+    }
+    
+    /* 热搜卡片悬停效果 */
+    .hot-topic-card {
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    
+    .hot-topic-card:hover {
+        background-color: rgba(0, 0, 0, 0.02);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* 热门评论样式 */
+    .top-comment {
+        font-size: 0.9rem;
+        position: relative;
+        overflow: hidden;
+        border-radius: 0.25rem;
+        transition: all 0.2s ease;
+    }
+    
+    .top-comment:hover {
+        background-color: rgba(0, 0, 0, 0.04);
+    }
+    
+    .top-comment-content {
+        color: #495057;
+        line-height: 1.4;
+    }
+    
+    .comment-badge {
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+    
+    .heat-badge {
+        color: #dc3545;
+        font-size: 0.85rem;
+    }
 </style>
 {% endblock %}
 
@@ -237,7 +285,7 @@
                 <div class="card-body p-0">
                     <div class="list-group list-group-flush">
                         {% if top_topics %}
-                            {% for topic, heat_score in top_topics %}
+                            {% for topic, heat_score, top_comment, comments_count in top_topics %}
                                 <div class="list-group-item hot-topic-card {% if topic.is_pinned %}pinned{% endif %} p-3" data-id="{{ topic.id }}">
                                     <div class="d-flex">
                                         <div class="topic-number {% if forloop.counter == 1 %}top1{% elif forloop.counter == 2 %}top2{% elif forloop.counter == 3 %}top3{% endif %} me-3">
@@ -281,6 +329,30 @@
                                             {% if topic.content %}
                                             <p class="mb-2 topic-content">{{ topic.content }}</p>
                                             {% endif %}
+                                            
+                                            <!-- 显示热度最高的评论 -->
+                                            {% if top_comment %}
+                                            <div class="top-comment mb-2 p-2 border-start border-info bg-light rounded">
+                                                <div class="d-flex align-items-center mb-1">
+                                                    <small class="text-muted me-2">
+                                                        <i class="bi bi-chat-left-text"></i>
+                                                        热门评论 · 
+                                                        {% if top_comment.is_anonymous %}
+                                                            匿名用户
+                                                        {% else %}
+                                                            {{ top_comment.author.username }}
+                                                        {% endif %}
+                                                    </small>
+                                                    <small class="badge bg-light text-dark">
+                                                        <i class="bi bi-heart"></i> {{ top_comment.likes_count }}
+                                                    </small>
+                                                </div>
+                                                <div class="top-comment-content">
+                                                    {{ top_comment.content|truncatechars:50 }}
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                            
                                             <div class="d-flex justify-content-between align-items-center topic-meta">
                                                 <div class="d-flex align-items-center flex-wrap gap-2">
                                                     <small class="text-muted topic-user-info">
@@ -292,6 +364,9 @@
                                                     </small>
                                                     <small class="heat-badge">
                                                         <i class="bi bi-graph-up me-1"></i>热度 {{ heat_score|floatformat:1 }}
+                                                    </small>
+                                                    <small class="comment-badge">
+                                                        <i class="bi bi-chat-dots me-1"></i>{{ comments_count }} 评论
                                                     </small>
                                                 </div>
                                                 <div class="like-btn {% if topic.id in user_liked_topics %}liked{% endif %}" data-id="{{ topic.id }}">
@@ -580,6 +655,7 @@
                             bindLikeButtons();
                             bindDeleteButtons();
                             bindPinButtons();
+                            bindTopicCardClickEvent(); // 重新绑定热搜卡片点击事件
                         } else {
                             showToast(data.message || '加载失败，请重试');
                             container.innerHTML = '<div class="list-group-item p-4 text-center"><p class="mb-0">加载失败，<a href="javascript:void(0);" onclick="loadRecentTopics(1)">点击重试</a></p></div>';
@@ -587,7 +663,6 @@
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        showToast('发生错误，请重试');
                         container.innerHTML = '<div class="list-group-item p-4 text-center"><p class="mb-0">加载失败，<a href="javascript:void(0);" onclick="loadRecentTopics(1)">点击重试</a></p></div>';
                     });
             }
@@ -850,10 +925,33 @@
             });
         }
         
+        // 绑定热搜卡片的点击事件，点击后跳转到热搜详情页
+        function bindTopicCardClickEvent() {
+            const topicCards = document.querySelectorAll('.hot-topic-card');
+            topicCards.forEach(card => {
+                card.addEventListener('click', function(e) {
+                    // 如果点击的是其他交互元素（按钮、链接等），不执行跳转
+                    if (e.target.closest('.like-btn') || 
+                        e.target.closest('.dropdown') || 
+                        e.target.closest('a') || 
+                        e.target.closest('button')) {
+                        return;
+                    }
+                    
+                    // 获取热搜ID并跳转
+                    const topicId = this.getAttribute('data-id');
+                    if (topicId) {
+                        window.location.href = `/hot-topics/${topicId}/`;
+                    }
+                });
+            });
+        }
+        
         // 立即绑定初始页面上的按钮
         bindLikeButtons();
         bindDeleteButtons();
         bindPinButtons();
+        bindTopicCardClickEvent();
         
         // 显示弹窗提示
         function showToast(message) {

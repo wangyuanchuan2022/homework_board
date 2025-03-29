@@ -272,6 +272,14 @@
                             </select>
                         </div>
                     </div>
+                    <div class="mb-3" id="studentIdGroup" style="display: none;">
+                        <label for="studentId" class="form-label">学号</label>
+                        <div class="input-group-glass">
+                            <span class="input-group-text"><i class="bi bi-card-heading"></i></span>
+                            <input type="text" class="form-control" id="studentId" placeholder="格式：23410xx">
+                        </div>
+                        <small class="form-text text-muted">学生账号必须填写学号</small>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -1260,10 +1268,37 @@
                 return;
             }
             
+            // 检查学生账号是否填写了学号
+            if (userType === 'student') {
+                const studentId = document.getElementById('studentId').value;
+                if (!studentId) {
+                    showErrorToast('学生账号必须填写学号');
+                    return;
+                }
+                
+                // 验证学号格式
+                if (!/^23410\d{2}$/.test(studentId)) {
+                    showErrorToast('学号格式不正确，应为23410xx格式');
+                    return;
+                }
+            }
+            
             // 显示加载状态
             const originalText = this.innerHTML;
             this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 创建中...';
             this.disabled = true;
+            
+            // 构建请求数据
+            const requestData = {
+                username: username,
+                password: password,
+                user_type: userType
+            };
+            
+            // 如果是学生账号，添加学号参数
+            if (userType === 'student') {
+                requestData.student_id = document.getElementById('studentId').value;
+            }
             
             fetch('/api/create-user/', {
                 method: 'POST',
@@ -1271,11 +1306,7 @@
                     'Content-Type': 'application/json',
                     'X-CSRFToken': '{{ csrf_token }}'
                 },
-                body: JSON.stringify({
-                    username: username,
-                    password: password,
-                    user_type: userType
-                })
+                body: JSON.stringify(requestData)
             })
             .then(response => {
                 if (!response.ok) {
@@ -1318,6 +1349,16 @@
                 this.innerHTML = originalText;
                 this.disabled = false;
             });
+        });
+        
+        // 账号类型切换时显示/隐藏学号输入框
+        document.getElementById('userType').addEventListener('change', function() {
+            const studentIdGroup = document.getElementById('studentIdGroup');
+            if (this.value === 'student') {
+                studentIdGroup.style.display = 'block';
+            } else {
+                studentIdGroup.style.display = 'none';
+            }
         });
         
         // 清理旧作业

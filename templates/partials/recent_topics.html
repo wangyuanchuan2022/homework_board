@@ -1,5 +1,6 @@
 {% if recent_topics %}
-{% for topic in recent_topics %}
+{% for topic_data in recent_topics_with_comment %}
+{% with topic=topic_data.topic top_comment=topic_data.top_comment comments_count=topic_data.comments_count %}
 <div class="list-group-item hot-topic-card {% if topic.is_pinned %}pinned{% endif %} p-3" data-id="{{ topic.id }}">
     <div class="d-flex">
         <div class="flex-grow-1">
@@ -9,7 +10,7 @@
                         {% if topic.is_pinned %}
                         <span class="badge bg-danger me-1">置顶</span>
                         {% endif %}
-                        <span>{{ topic.title }}</span>
+                        <a href="{% url 'hot_topic_detail' topic.id %}" class="text-decoration-none">{{ topic.title }}</a>
                     </h5>
                 </div>
                 {% if request.user == topic.author or request.user.user_type == 'admin' %}
@@ -28,7 +29,8 @@
                         {% endif %}
                         {% if request.user.user_type == 'admin' %}
                         <li>
-                            <a class="dropdown-item pin-topic" data-id="{{ topic.id }}" data-pinned="{{ topic.is_pinned|yesno:'true,false' }}"
+                            <a class="dropdown-item pin-topic" data-id="{{ topic.id }}"
+                               data-pinned="{{ topic.is_pinned|yesno:'true,false' }}"
                                href="javascript:void(0);">
                                 <i class="bi bi-pin-angle me-2 {% if topic.is_pinned %}text-danger{% endif %}"></i>
                                 {% if topic.is_pinned %}取消置顶{% else %}置顶{% endif %}
@@ -42,6 +44,30 @@
             {% if topic.content %}
             <p class="mb-2 topic-content">{{ topic.content }}</p>
             {% endif %}
+            
+            <!-- 显示热度最高的评论 -->
+            {% if top_comment %}
+            <div class="top-comment mb-2 p-2 border-start border-info bg-light rounded">
+                <div class="d-flex align-items-center mb-1">
+                    <small class="text-muted me-2">
+                        <i class="bi bi-chat-left-text"></i>
+                        热门评论 · 
+                        {% if top_comment.is_anonymous %}
+                            匿名用户
+                        {% else %}
+                            {{ top_comment.author.username }}
+                        {% endif %}
+                    </small>
+                    <small class="badge bg-light text-dark">
+                        <i class="bi bi-heart"></i> {{ top_comment.likes_count }}
+                    </small>
+                </div>
+                <div class="top-comment-content">
+                    {{ top_comment.content|truncatechars:50 }}
+                </div>
+            </div>
+            {% endif %}
+            
             <div class="d-flex justify-content-between align-items-center topic-meta">
                 <div class="d-flex align-items-center flex-wrap gap-2">
                     <small class="text-muted topic-user-info">
@@ -54,6 +80,9 @@
                     <small class="text-muted">
                         <i class="bi bi-calendar-date me-1"></i>{{ topic.created_at|date:"Y-m-d H:i" }}
                     </small>
+                    <small class="comment-badge">
+                        <i class="bi bi-chat-dots me-1"></i>{{ comments_count }} 评论
+                    </small>
                 </div>
                 <div class="like-btn {% if topic.id in user_liked_topics %}liked{% endif %}" data-id="{{ topic.id }}">
                     <i class="bi {% if topic.id in user_liked_topics %}bi-heart-fill{% else %}bi-heart{% endif %} me-1"></i>
@@ -63,6 +92,7 @@
         </div>
     </div>
 </div>
+{% endwith %}
 {% endfor %}
 
 <!-- 分页控件 -->

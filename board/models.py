@@ -187,7 +187,7 @@ class Comment(models.Model):
         k = -0.15  # 负值表示随时间衰减，评论的衰减可以比热搜快一些
         
         # 计算热度：(点赞数 + 回复数) * e^(k*(t-t0))
-        heat = (likes + replies) * math.exp(k * days)
+        heat = (1 + likes + replies) * math.exp(k * days)
         return heat
 
 

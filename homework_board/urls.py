@@ -59,6 +59,7 @@ urlpatterns = [
     path("api/comments/hot/", views.get_hot_comments, name="get_hot_comments"),
     path("api/comments/all/", views.get_comments, name="get_comments"),
     path("api/comments/replies/", views.get_replies, name="get_replies"),
+    path("api/comments/delete/", views.delete_comment, name="delete_comment"),
     path("api/admin/students/", views.get_admin_students, name="get_admin_students"),
     path("api/admin/teachers/", views.get_admin_teachers, name="get_admin_teachers"),
     path("api/admin/assignments/", views.get_admin_assignments, name="get_admin_assignments"),

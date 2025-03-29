@@ -28,26 +28,20 @@
                                     </span>
                                 </div>
                             </div>
-                            <div class="like-btn comment-like-btn {% if reply.id in user_liked_comments %}liked{% endif %}" 
-                                 data-id="{{ reply.id }}">
-                                <i class="bi {% if reply.id in user_liked_comments %}bi-heart-fill{% else %}bi-heart{% endif %} me-1"></i>
-                                <span class="likes-count">{{ reply.likes_count }}</span>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if request.user.user_type == 'admin' or request.user == reply.author %}
+                                <button type="button" class="btn btn-sm btn-light delete-comment-btn" data-id="{{ reply.id }}" title="删除回复">
+                                    <i class="bi bi-trash text-danger"></i>
+                                </button>
+                                {% endif %}
+                                <div class="like-btn comment-like-btn {% if reply.id in user_liked_comments %}liked{% endif %}" 
+                                     data-id="{{ reply.id }}">
+                                    <i class="bi {% if reply.id in user_liked_comments %}bi-heart-fill{% else %}bi-heart{% endif %} me-1"></i>
+                                    <span class="likes-count">{{ reply.likes_count }}</span>
+                                </div>
                             </div>
                         </div>
-                        
-                        <!-- 引用原评论 -->
-                        <div class="comment-quote">
-                            <small class="text-muted">
-                                回复 
-                                {% if parent_comment.is_anonymous %}
-                                    匿名用户
-                                {% else %}
-                                    {{ parent_comment.author.username }}
-                                {% endif %}:
-                            </small>
-                            <div>{{ parent_comment.content|truncatechars:50 }}</div>
-                        </div>
-                        
+
                         <div class="comment-content mb-3">
                             {{ reply.content }}
                         </div>
