@@ -14,6 +14,30 @@
 - **热搜功能**：支持发布热门话题，带有点赞和热度计算功能
 - **API接口**：提供获取当日作业的API接口，方便第三方应用集成
 
+## 示例界面
+
+以下是系统的主要界面截图：
+
+### 学生仪表盘
+
+学生可以在仪表盘查看待完成的作业，并通过日历视图管理作业计划。
+
+![学生仪表盘](/images/student_dashboard_screenshot_1.png)
+
+### 教师仪表盘
+
+教师可以查看和管理已创建的作业，并统计学生完成情况。
+
+![教师仪表盘1](/images/teacher_dashboard_screenshot_1.png)
+
+![教师仪表盘2](/images/teacher_dashboard_screenshot_2.png.png)
+
+### 桌面客户端
+
+系统支持Windows桌面客户端，方便快速查看作业。
+
+![Windows桌面客户端](/images/widows_desktop.png)
+
 ## 系统架构
 
 ### 技术栈
@@ -204,10 +228,6 @@ python manage.py runserver
    - 在views.py中添加相应的视图函数
    - 在urls.py中配置URL路由
    - 在templates目录中创建新的模板
-
-2. **自定义科目**
-   - 修改models.py中的create_subjects函数
-   - 添加或修改默认科目列表
 
 ## 许可证
 
