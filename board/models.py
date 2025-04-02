@@ -204,3 +204,46 @@ class CommentLike(models.Model):
 
     def __str__(self):
         return f"{self.user.username} 点赞了评论 {self.comment.id}"
+
+
+class Notification(models.Model):
+    """用户通知模型"""
+    TYPE_CHOICES = (
+        ('like', '点赞'),
+        ('reply', '回复'),
+        ('system', '系统'),
+    )
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications', verbose_name="接收者")
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_notifications', null=True, blank=True, verbose_name="发送者")
+    type = models.CharField(max_length=10, choices=TYPE_CHOICES, verbose_name="通知类型")
+    content = models.TextField(verbose_name="通知内容")
+    topic = models.ForeignKey(HotTopic, on_delete=models.SET_NULL, null=True, blank=True, related_name='notifications', verbose_name="相关热搜")
+    comment = models.ForeignKey(Comment, on_delete=models.SET_NULL, null=True, blank=True, related_name='notifications', verbose_name="相关评论")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+    is_read = models.BooleanField(default=False, verbose_name="是否已读")
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "通知"
+        verbose_name_plural = "通知"
+
+    def __str__(self):
+        return f"{self.get_type_display()} 通知给 {self.recipient.username}"
+
+
+class DeviceLogin(models.Model):
+    """设备登录记录模型"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='device_logins', verbose_name="用户")
+    device_name = models.CharField(max_length=100, verbose_name="设备名称")
+    ip_address = models.GenericIPAddressField(verbose_name="IP地址", null=True, blank=True, unpack_ipv4=True)
+    user_agent = models.TextField(verbose_name="用户代理")
+    location = models.CharField(max_length=100, blank=True, null=True, verbose_name="登录地点")
+    login_time = models.DateTimeField(auto_now_add=True, verbose_name="登录时间")
+    
+    class Meta:
+        ordering = ['-login_time']
+        verbose_name = "设备登录"
+        verbose_name_plural = "设备登录"
+
+    def __str__(self):
+        return f"{self.user.username} 在 {self.login_time} 通过 {self.device_name} 登录"

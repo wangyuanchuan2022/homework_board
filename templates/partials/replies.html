@@ -42,8 +42,8 @@
                             </div>
                         </div>
 
-                        <div class="comment-content mb-3">
-                            {{ reply.content }}
+                        <div class="comment-content mb-3 markdown-content">
+                            {{ reply.html_content|safe }}
                         </div>
                     </div>
                 </div>

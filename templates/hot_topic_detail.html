@@ -190,6 +190,56 @@
     .replies-container {
         transition: all 0.3s ease;
     }
+    
+    /* Markdown 样式 */
+    .markdown-content img.math-formula {
+        max-width: 100%;
+        height: auto;
+        margin: 5px 0;
+    }
+    
+    .markdown-content img.math-formula.inline {
+        vertical-align: middle;
+        display: inline-block;
+    }
+    
+    .markdown-content code {
+        background-color: #f5f5f5;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-family: Consolas, Monaco, 'Andale Mono', monospace;
+    }
+    
+    .markdown-content pre {
+        background-color: #f5f5f5;
+        padding: 10px;
+        border-radius: 5px;
+        overflow-x: auto;
+    }
+    
+    .markdown-content blockquote {
+        border-left: 4px solid #ddd;
+        padding-left: 10px;
+        color: #666;
+        margin-left: 0;
+    }
+    
+    .markdown-content table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 15px 0;
+    }
+    
+    .markdown-content table th,
+    .markdown-content table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+    }
+    
+    .markdown-content table th {
+        background-color: #f5f5f5;
+        font-weight: bold;
+    }
 </style>
 {% endblock %}
 
@@ -221,7 +271,7 @@
                     <h3 class="card-title mb-3">{{ topic.title }}</h3>
                     
                     {% if topic.content %}
-                    <div class="card-text mb-4">{{ topic.content }}</div>
+                    <div class="card-text mb-4 markdown-content">{{ topic.html_content|safe }}</div>
                     {% endif %}
                     
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -259,6 +309,9 @@
                     <form id="mainCommentForm" data-topic-id="{{ topic.id }}">
                         <div class="mb-3">
                             <textarea class="form-control" id="commentContent" rows="3" placeholder="发表你的评论..." required></textarea>
+                            <small class="form-text text-muted">
+                                <i class="bi bi-markdown me-1"></i>支持Markdown语法和LaTeX数学公式($...$行内公式，$$...$$独立公式块)
+                            </small>
                         </div>
                         <div class="mb-3 form-check">
                             <input class="form-check-input" id="isAnonymousComment" type="checkbox">

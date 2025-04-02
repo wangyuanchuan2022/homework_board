@@ -42,7 +42,7 @@
                 {% endif %}
             </div>
             {% if topic.content %}
-            <p class="mb-2 topic-content">{{ topic.content }}</p>
+            <p class="mb-2 topic-content">{{ topic.plain_content|default:topic.content|linebreaks|truncatechars:100 }}</p>
             {% endif %}
             
             <!-- 显示热度最高的评论 -->
@@ -63,7 +63,7 @@
                     </small>
                 </div>
                 <div class="top-comment-content">
-                    {{ top_comment.content|truncatechars:50 }}
+                    {{ top_comment.plain_content|default:top_comment.content|truncatechars:50 }}
                 </div>
             </div>
             {% endif %}

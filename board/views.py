@@ -2,6 +2,7 @@ import calendar
 import datetime
 import json
 import re
+import math
 from functools import wraps
 
 from django.contrib.auth import login, logout, authenticate
@@ -13,10 +14,15 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Count
+from django.contrib import messages
+from django.urls import reverse
+import markdown
+import ipaddress
+from user_agents import parse as user_agents_parse
 
 from .forms import CustomUserCreationForm, CustomAuthenticationForm, AssignmentForm, BatchAssignmentForm, \
     UpdateUsernameForm, ChangePasswordForm
-from .models import User, Subject, Assignment, CompletionRecord, HotTopic, HotTopicLike, Comment, CommentLike
+from .models import User, Subject, Assignment, CompletionRecord, HotTopic, HotTopicLike, Comment, CommentLike, Notification, DeviceLogin
 
 
 def user_type_required(user_types):
@@ -44,6 +50,10 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
+                
+                # 记录设备登录信息
+                record_device_login(request, user)
+                
                 return redirect('dashboard')
     else:
         form = CustomAuthenticationForm()
@@ -73,6 +83,10 @@ def register_view(request):
                         )
 
             login(request, user)
+            
+            # 记录设备登录信息
+            record_device_login(request, user)
+            
             return redirect('dashboard')
         else:
             # 记录表单验证错误，方便调试
@@ -1039,6 +1053,50 @@ def delete_my_account(request):
     return redirect('settings')
 
 
+def strip_markdown(text):
+    """将Markdown文本转换为纯文本（去除Markdown语法标记）"""
+    if not text:
+        return ""
+        
+    # 去除行间公式标记$$...$$，保留内部内容
+    text = re.sub(r"\$\$(.*?)\$\$", r"[\1]", text, flags=re.S)
+    
+    # 去除行内公式标记$...$，保留内部内容
+    text = re.sub(r"\$(.*?)\$", r"[\1]", text, flags=re.S)
+    
+    # 去除标题标记
+    text = re.sub(r"^#{1,6}\s+", "", text, flags=re.M)
+    
+    # 去除粗体和斜体
+    text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
+    text = re.sub(r"\*(.*?)\*", r"\1", text)
+    text = re.sub(r"__(.*?)__", r"\1", text)
+    text = re.sub(r"_(.*?)_", r"\1", text)
+    
+    # 去除行内代码和代码块
+    text = re.sub(r"`{1,3}(.*?)`{1,3}", r"\1", text, flags=re.S)
+    
+    # 去除链接，保留链接文本
+    text = re.sub(r"\[(.*?)\]\(.*?\)", r"\1", text)
+    
+    # 去除图片标记，用[图片]替代
+    text = re.sub(r"!\[.*?\]\(.*?\)", "[图片]", text)
+    
+    # 去除引用标记
+    text = re.sub(r"^>\s+", "", text, flags=re.M)
+    
+    # 去除分割线
+    text = re.sub(r"^-{3,}$", "", text, flags=re.M)
+    text = re.sub(r"^={3,}$", "", text, flags=re.M)
+    text = re.sub(r"^\*{3,}$", "", text, flags=re.M)
+    
+    # 去除列表标记
+    text = re.sub(r"^[\*\-+]\s+", "", text, flags=re.M)
+    text = re.sub(r"^\d+\.\s+", "", text, flags=re.M)
+    
+    return text.strip()
+
+
 @user_type_required(['student', 'admin'])
 def hot_topics_view(request):
     """热搜页面视图"""
@@ -1081,6 +1139,10 @@ def hot_topics_view(request):
     # 为每个热搜获取热度最高的评论
     top_topics_with_top_comment = []
     for topic, score in top_topics:
+        # 处理内容为纯文本
+        if topic.content:
+            topic.plain_content = strip_markdown(topic.content)
+            
         comments = Comment.objects.filter(topic=topic, parent__isnull=True)
         top_comment = None
         if comments.exists():
@@ -1089,12 +1151,19 @@ def hot_topics_view(request):
             sorted_comments = sorted(comments_with_score, key=lambda x: -x[1])
             if sorted_comments:
                 top_comment = sorted_comments[0][0]
+                # 处理评论内容为纯文本
+                if top_comment.content:
+                    top_comment.plain_content = strip_markdown(top_comment.content)
 
         top_topics_with_top_comment.append((topic, score, top_comment, topic.comments_count))
 
     # 为最近热搜获取热度最高的评论
     recent_topics_with_comment = []
     for topic in recent_topics:
+        # 处理内容为纯文本
+        if topic.content:
+            topic.plain_content = strip_markdown(topic.content)
+            
         comments = Comment.objects.filter(topic=topic, parent__isnull=True)
         top_comment = None
         if comments.exists():
@@ -1103,6 +1172,9 @@ def hot_topics_view(request):
             sorted_comments = sorted(comments_with_score, key=lambda x: -x[1])
             if sorted_comments:
                 top_comment = sorted_comments[0][0]
+                # 处理评论内容为纯文本
+                if top_comment.content:
+                    top_comment.plain_content = strip_markdown(top_comment.content)
 
         recent_topics_with_comment.append({
             'topic': topic,
@@ -1207,6 +1279,19 @@ def toggle_hot_topic_like(request):
                 HotTopicLike.objects.create(topic=topic, user=request.user)
                 action = 'liked'
                 message = '已点赞'
+                
+                # 创建点赞通知（排除给自己的点赞，但包括匿名热搜）
+                if topic.author != request.user:
+                    sender_name = "匿名用户" if request.user.is_anonymous or (hasattr(request, 'is_anonymous_view') and request.is_anonymous_view) else request.user.username
+                    notification_content = f"{sender_name} 点赞了你的热搜《{topic.title}》"
+                    
+                    Notification.objects.create(
+                        recipient=topic.author,
+                        sender=request.user if not request.user.is_anonymous else None,
+                        type='like',
+                        content=notification_content,
+                        topic=topic
+                    )
 
             # 获取最新点赞数
             likes_count = topic.likes_count
@@ -1253,6 +1338,10 @@ def get_recent_topics(request):
         # 为每个热搜获取热度最高的评论
         recent_topics_with_comment = []
         for topic in recent_topics:
+            # 处理内容为纯文本
+            if topic.content:
+                topic.plain_content = strip_markdown(topic.content)
+                
             comments = Comment.objects.filter(topic=topic, parent__isnull=True)
             top_comment = None
             if comments.exists():
@@ -1261,6 +1350,9 @@ def get_recent_topics(request):
                 sorted_comments = sorted(comments_with_score, key=lambda x: -x[1])
                 if sorted_comments:
                     top_comment = sorted_comments[0][0]
+                    # 处理评论内容为纯文本
+                    if top_comment.content:
+                        top_comment.plain_content = strip_markdown(top_comment.content)
 
             recent_topics_with_comment.append({
                 'topic': topic,
@@ -1278,13 +1370,11 @@ def get_recent_topics(request):
         return JsonResponse({
             'success': True,
             'html': html_content,
-            'has_previous': recent_topics.has_previous(),
             'has_next': recent_topics.has_next(),
-            'current_page': recent_topics.number,
+            'has_previous': recent_topics.has_previous(),
             'total_pages': paginator.num_pages,
-            'page_range': list(paginator.page_range)
+            'current_page': recent_topics.number
         })
-
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
 
@@ -1462,6 +1552,12 @@ def hot_topic_detail_view(request, topic_id):
 
     # 获取热搜热度
     heat_score = topic.heat_score
+    
+    # 将热搜内容转换为Markdown (如果有内容)
+    if topic.content:
+        topic.html_content = convert_markdown_to_html(topic.content)
+    else:
+        topic.html_content = ""
 
     # 获取用户已点赞的热搜ID列表
     if request.user.is_authenticated:
@@ -1511,13 +1607,41 @@ def create_comment(request):
                     return JsonResponse({'success': False, 'message': '回复的评论不存在'})
 
             # 创建评论
-            Comment.objects.create(
+            comment = Comment.objects.create(
                 topic=topic,
                 author=request.user,
                 content=content,
                 parent=parent,
                 is_anonymous=is_anonymous
             )
+            
+            # 获取发送者名称
+            sender_name = "匿名用户" if is_anonymous else request.user.username
+            
+            # 如果是回复评论，创建回复通知（排除回复自己，但包括匿名评论）
+            if parent and parent.author != request.user:
+                notification_content = f"{sender_name} 回复了你的评论: {content[:100]}" + ('...' if len(content) > 100 else '')
+                
+                Notification.objects.create(
+                    recipient=parent.author,
+                    sender=request.user if not is_anonymous else None,
+                    type='reply',
+                    content=notification_content,
+                    topic=topic,
+                    comment=comment
+                )
+            # 如果是评论热搜，可以给热搜作者发通知
+            elif not parent and topic.author != request.user:
+                notification_content = f"{sender_name} 评论了你的热搜《{topic.title}》: {content[:50]}" + ('...' if len(content) > 50 else '')
+                
+                Notification.objects.create(
+                    recipient=topic.author,
+                    sender=request.user if not is_anonymous else None,
+                    type='reply',
+                    content=notification_content,
+                    topic=topic,
+                    comment=comment
+                )
 
             return JsonResponse({'success': True})
         except HotTopic.DoesNotExist:
@@ -1548,6 +1672,20 @@ def toggle_comment_like(request):
                 CommentLike.objects.create(comment=comment, user=request.user)
                 action = 'liked'
                 message = '已点赞'
+                
+                # 创建点赞通知（排除给自己的点赞，但包括匿名评论）
+                if comment.author != request.user:
+                    sender_name = "匿名用户" if request.user.is_anonymous or (hasattr(request, 'is_anonymous_view') and request.is_anonymous_view) else request.user.username
+                    notification_content = f"{sender_name} 点赞了你的评论"
+                    
+                    Notification.objects.create(
+                        recipient=comment.author,
+                        sender=request.user if not request.user.is_anonymous else None,
+                        type='like',
+                        content=notification_content,
+                        topic=comment.topic,
+                        comment=comment
+                    )
 
             # 获取最新点赞数
             likes_count = comment.likes_count
@@ -1586,6 +1724,10 @@ def get_hot_comments(request):
 
         # 取前5条热门评论
         hot_comments = [comment for comment, _ in sorted_comments[:5]]
+        
+        # 为每个评论添加HTML内容（Markdown渲染）
+        for comment in hot_comments:
+            comment.html_content = convert_markdown_to_html(comment.content)
 
         # 获取用户已点赞的评论ID列表
         if request.user.is_authenticated:
@@ -1633,6 +1775,10 @@ def get_comments(request):
         except:
             # 如果页码无效，返回第一页
             comments = paginator.page(1)
+            
+        # 为每个评论添加HTML内容（Markdown渲染）
+        for comment in comments:
+            comment.html_content = convert_markdown_to_html(comment.content)
 
         # 获取用户已点赞的评论ID列表
         if request.user.is_authenticated:
@@ -1672,6 +1818,10 @@ def get_replies(request):
 
         # 获取所有回复，按创建时间排序
         replies = Comment.objects.filter(parent=comment).order_by('created_at')
+        
+        # 为每个回复添加HTML内容（Markdown渲染）
+        for reply in replies:
+            reply.html_content = convert_markdown_to_html(reply.content)
 
         # 获取用户已点赞的评论ID列表
         if request.user.is_authenticated:
@@ -1718,3 +1868,262 @@ def delete_comment(request):
             return JsonResponse({'success': False, 'message': '评论不存在'})
 
     return JsonResponse({'success': False, 'message': '请求方法错误'})
+
+
+def convert_markdown_to_html(text):
+    """将Markdown文本转换为HTML，包括数学公式支持"""
+    if not text:
+        return ""
+    
+    # 文本过长可能导致内存问题，添加长度限制
+    MAX_TEXT_LENGTH = 50000  # 设置一个合理的最大长度
+    if len(text) > MAX_TEXT_LENGTH:
+        text = text[:MAX_TEXT_LENGTH] + "\n\n**内容过长，已截断显示**"
+        
+    try:
+        # 使用markdown库转换基本markdown语法
+        md = markdown.Markdown(extensions=[
+            'markdown.extensions.extra',
+            'markdown.extensions.codehilite',
+            'markdown.extensions.toc',
+        ])
+        
+        # 先转换为HTML
+        html = md.convert(text)
+        
+        # 检测是否启用简单模式（当检测到服务器内存压力大时使用）
+        USE_SIMPLE_MODE = False
+        
+        # 安全替换函数，处理可能过长的公式
+        def safe_formula_replace(match):
+            formula = match.group(1).strip()
+            # 限制公式长度
+            if len(formula) > 500:
+                return '<div class="alert alert-warning">公式过长，无法显示</div>'
+                
+            if USE_SIMPLE_MODE:
+                # 简单模式：直接显示代码格式的公式
+                return f'<div class="math-block"><code>$${formula}$$</code></div>'
+                
+            try:
+                # 对公式进行URL编码，确保特殊字符能正确传递
+                import urllib.parse
+                encoded_formula = urllib.parse.quote(formula)
+                return f'<div><img align="center" src="https://latex.codecogs.com/svg.latex?{encoded_formula}" class="math-formula"></div>'
+            except Exception:
+                return f'<div class="math-block"><code>$${formula}$$</code></div>'
+        
+        def safe_inline_formula_replace(match):
+            formula = match.group(1).strip()
+            # 限制公式长度
+            if len(formula) > 300:
+                return '<span class="text-warning">公式过长</span>'
+                
+            if USE_SIMPLE_MODE:
+                # 简单模式：直接显示代码格式的公式
+                return f'<code>${formula}$</code>'
+                
+            try:
+                # 对公式进行URL编码，确保特殊字符能正确传递
+                import urllib.parse
+                encoded_formula = urllib.parse.quote(formula)
+                return f'<img align="center" alt="${formula}$" src="https://latex.codecogs.com/svg.latex?{encoded_formula}" class="math-formula inline">'
+            except Exception:
+                return f'<code>${formula}$</code>'
+        
+        # 使用正则表达式一次性替换所有公式，避免多次字符串替换操作
+        # 处理行间公式：$$...$$（限制最多处理10个公式，避免内存问题）
+        html = re.sub(
+            r"\$\$(.*?)\$\$", 
+            safe_formula_replace, 
+            html, 
+            count=20,  # 限制替换次数
+            flags=re.S
+        )
+        
+        # 处理行内公式：$...$（限制最多处理20个公式，避免内存问题）
+        html = re.sub(
+            r"\$(.*?)\$", 
+            safe_inline_formula_replace, 
+            html, 
+            count=40,  # 限制替换次数
+            flags=re.S
+        )
+        
+        return html
+    except MemoryError:
+        # 捕获内存错误，返回简化版本
+        return f"<p>内容过于复杂，无法渲染。原文：</p><pre>{text[:200]}...</pre>"
+    except Exception as e:
+        # 捕获其他错误
+        return f"<p>渲染失败：{str(e)}</p><pre>{text[:200]}...</pre>"
+
+
+@login_required
+def user_notifications(request):
+    """用户的消息中心，显示各类通知"""
+    if request.user.user_type not in ['student', 'admin']:
+        return redirect('dashboard')
+    
+    # 获取通知数据
+    likes = Notification.objects.filter(recipient=request.user, type='like')
+    replies = Notification.objects.filter(recipient=request.user, type='reply')
+    system = Notification.objects.filter(recipient=request.user, type='system')
+    
+    # 设备登录记录
+    device_logins = DeviceLogin.objects.filter(user=request.user).order_by('-login_time')[:10]
+    
+    # 标记所有通知为已读（可选，也可以在用户查看特定类型通知时才标记）
+    # Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+    
+    return render(request, 'notifications.html', {
+        'likes': likes,
+        'replies': replies,
+        'system': system,
+        'device_logins': device_logins,
+    })
+
+
+@login_required
+def mark_notifications_read(request, notification_type=None):
+    """标记通知为已读"""
+    if request.method == 'POST':
+        if notification_type:
+            # 标记特定类型的通知为已读
+            Notification.objects.filter(
+                recipient=request.user, 
+                type=notification_type, 
+                is_read=False
+            ).update(is_read=True)
+        else:
+            # 标记所有通知为已读
+            Notification.objects.filter(
+                recipient=request.user, 
+                is_read=False
+            ).update(is_read=True)
+        
+        return JsonResponse({'status': 'success'})
+    
+    return JsonResponse({'status': 'error', 'message': '仅支持POST请求'})
+
+
+@login_required
+def unread_notifications_count(request):
+    """获取未读通知数量"""
+    if request.user.user_type not in ['student', 'admin']:
+        return JsonResponse({'count': 0})
+    
+    count = Notification.objects.filter(recipient=request.user, is_read=False).count()
+    return JsonResponse({'count': count})
+
+
+def record_device_login(request, user):
+    """记录设备登录信息并创建系统通知"""
+    if not request:
+        print("请求对象为空，无法记录设备信息")
+        return
+    
+    try:
+        # 获取IP地址
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR', '127.0.0.1')  # 默认为本地IP
+        
+        # 确保IP地址有效
+        try:
+            # 验证IP地址格式
+            ipaddress.ip_address(ip)
+        except ValueError:
+            print(f"IP地址格式无效: {ip}，使用默认IP")
+            ip = '127.0.0.1'
+        
+        # 解析User-Agent
+        user_agent_string = request.META.get('HTTP_USER_AGENT', '')
+        print(f"收到的User-Agent: {user_agent_string}")
+        
+        try:
+            if user_agent_string:
+                user_agent = user_agents_parse(user_agent_string)
+                browser = user_agent.browser.family
+                os_family = user_agent.os.family
+                device_name = f"{browser} on {os_family}"
+                
+                if user_agent.is_mobile:
+                    device_type = "移动设备"
+                elif user_agent.is_tablet:
+                    device_type = "平板设备"
+                elif user_agent.is_pc:
+                    device_type = "电脑"
+                else:
+                    device_type = "其他设备"
+            else:
+                device_name = "未知浏览器"
+                device_type = "未知设备"
+        except Exception as ua_error:
+            print(f"解析User-Agent失败: {ua_error}")
+            device_name = "未识别设备"
+            device_type = "未知类型"
+        
+        # 创建设备登录记录
+        print(f"准备创建设备登录记录: 用户={user.username}, 设备={device_name}, IP={ip}")
+        
+        device_login = DeviceLogin.objects.create(
+            user=user,
+            device_name=device_name,
+            ip_address=ip,
+            user_agent=user_agent_string[:500] if user_agent_string else "无设备信息",  # 限制长度
+            location="未知位置"  # 可以接入IP地理位置API进行位置解析
+        )
+        
+        # 创建系统通知
+        login_time = device_login.login_time.strftime('%Y-%m-%d %H:%M:%S')
+        notification_content = f"您的账号于 {login_time} 通过 {device_type}（{device_name}）登录。IP地址: {ip}"
+        
+        Notification.objects.create(
+            recipient=user,
+            type='system',
+            content=notification_content
+        )
+        
+        print(f"设备登录记录和通知创建成功: {device_name}, {ip}")
+        return True
+    
+    except Exception as e:
+        # 记录详细错误但不影响登录流程
+        print(f"设备登录记录失败，错误详情: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+@login_required
+def test_device_detection(request):
+    """测试设备检测功能"""
+    user = request.user
+    
+    # 尝试直接记录设备信息
+    result = record_device_login(request, user)
+    
+    # 收集设备信息用于调试
+    debug_info = {
+        "IP信息": {
+            "X_Forwarded_For": request.META.get('HTTP_X_FORWARDED_FOR', '无'),
+            "REMOTE_ADDR": request.META.get('REMOTE_ADDR', '无'),
+        },
+        "User_Agent": request.META.get('HTTP_USER_AGENT', '无'),
+        "设备记录结果": "成功" if result else "失败",
+        "最近设备记录": []
+    }
+    
+    # 获取最近的设备登录记录
+    recent_logins = DeviceLogin.objects.filter(user=user).order_by('-login_time')[:5]
+    for login in recent_logins:
+        debug_info["最近设备记录"].append({
+            "设备名称": login.device_name,
+            "IP地址": login.ip_address,
+            "登录时间": login.login_time.strftime('%Y-%m-%d %H:%M:%S'),
+        })
+    
+    return render(request, 'debug_device.html', {'debug_info': debug_info})

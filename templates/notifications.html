@@ -1,0 +1,385 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}我的消息{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notification-container {
+        display: flex;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        min-height: 500px;
+    }
+    
+    .notification-sidebar {
+        width: 220px;
+        background-color: #f8f9fa;
+        border-right: 1px solid #dee2e6;
+        padding: 20px 0;
+    }
+    
+    .notification-content {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+    }
+    
+    .notification-nav {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .notification-nav-item {
+        padding: 12px 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .notification-nav-item.active {
+        background-color: #e9ecef;
+        font-weight: bold;
+    }
+    
+    .notification-nav-item:hover:not(.active) {
+        background-color: #f1f3f5;
+    }
+    
+    .notification-badge {
+        background-color: #ff6b6b;
+        color: white;
+        border-radius: 50px;
+        padding: 2px 8px;
+        font-size: 12px;
+    }
+    
+    .notification-item {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        transition: all 0.2s;
+    }
+    
+    .notification-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .notification-unread {
+        background-color: #e8f4ff;
+    }
+    
+    .notification-time {
+        color: #6c757d;
+        font-size: 0.8rem;
+    }
+    
+    .notification-content h3 {
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .device-login-item {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-left: 4px solid #4dabf7;
+    }
+    
+    .no-notifications {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #adb5bd;
+        height: 300px;
+    }
+    
+    .no-notifications i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    {% csrf_token %}
+    <div class="notification-container">
+        <!-- 左侧导航栏 -->
+        <div class="notification-sidebar">
+            <ul class="notification-nav">
+                <li class="notification-nav-item active" data-target="like-notifications">
+                    <span><i class="bi bi-heart me-2"></i> 我的点赞</span>
+                    <span class="notification-badge like-count">0</span>
+                </li>
+                <li class="notification-nav-item" data-target="reply-notifications">
+                    <span><i class="bi bi-chat-dots me-2"></i> 我的回复</span>
+                    <span class="notification-badge reply-count">0</span>
+                </li>
+                <li class="notification-nav-item" data-target="system-notifications">
+                    <span><i class="bi bi-bell me-2"></i> 系统消息</span>
+                    <span class="notification-badge system-count">0</span>
+                </li>
+                <li class="notification-nav-item" data-target="device-logins">
+                    <span><i class="bi bi-device-ssd me-2"></i> 登录设备</span>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- 右侧内容区 -->
+        <div class="notification-content">
+            <!-- 点赞通知 -->
+            <div class="notification-section" id="like-notifications">
+                <h3><i class="bi bi-heart me-2"></i>我的点赞</h3>
+                {% if likes %}
+                    <div class="notification-list">
+                        {% for notification in likes %}
+                            <div class="notification-item{% if not notification.is_read %} notification-unread{% endif %}" data-id="{{ notification.id }}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>{{ notification.sender.username }}</strong> 点赞了你的{% if notification.comment %}评论{% else %}热搜{% endif %}
+                                        <p class="mb-1">
+                                            {% if notification.comment %}
+                                                "{{ notification.comment.content|truncatechars:50 }}"
+                                            {% else %}
+                                                "{{ notification.topic.title|truncatechars:50 }}"
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    <small class="notification-time">{{ notification.created_at|date:"Y-m-d H:i" }}</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-notifications">
+                        <i class="bi bi-inbox"></i>
+                        <p>没有点赞通知</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- 回复通知 -->
+            <div class="notification-section" id="reply-notifications" style="display: none;">
+                <h3><i class="bi bi-chat-dots me-2"></i>我的回复</h3>
+                {% if replies %}
+                    <div class="notification-list">
+                        {% for notification in replies %}
+                            <div class="notification-item{% if not notification.is_read %} notification-unread{% endif %}" data-id="{{ notification.id }}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <p class="mb-1">{{ notification.content }}</p>
+                                        <p class="mb-0 text-muted small">
+                                            话题：{{ notification.topic.title|truncatechars:30 }}
+                                        </p>
+                                    </div>
+                                    <small class="notification-time">{{ notification.created_at|date:"Y-m-d H:i" }}</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-notifications">
+                        <i class="bi bi-chat"></i>
+                        <p>没有回复通知</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- 系统消息 -->
+            <div class="notification-section" id="system-notifications" style="display: none;">
+                <h3><i class="bi bi-bell me-2"></i>系统消息</h3>
+                {% if system %}
+                    <div class="notification-list">
+                        {% for notification in system %}
+                            <div class="notification-item{% if not notification.is_read %} notification-unread{% endif %}" data-id="{{ notification.id }}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>系统通知</strong>
+                                        <p class="mb-1">{{ notification.content }}</p>
+                                    </div>
+                                    <small class="notification-time">{{ notification.created_at|date:"Y-m-d H:i" }}</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-notifications">
+                        <i class="bi bi-bell-slash"></i>
+                        <p>没有系统消息</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- 登录设备 -->
+            <div class="notification-section" id="device-logins" style="display: none;">
+                <h3><i class="bi bi-device-ssd me-2"></i>登录设备</h3>
+                {% if device_logins %}
+                    <div class="notification-list">
+                        {% for device in device_logins %}
+                            <div class="device-login-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="mb-1">{{ device.device_name }}</h5>
+                                        <p class="mb-0">IP地址: {{ device.ip_address }}</p>
+                                        {% if device.location %}
+                                            <p class="mb-0">位置: {{ device.location }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <small class="notification-time">{{ device.login_time|date:"Y-m-d H:i" }}</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-notifications">
+                        <i class="bi bi-device-hdd"></i>
+                        <p>无设备登录记录</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 更新未读消息数量
+        updateUnreadCount();
+        
+        // 点击导航项切换显示内容
+        const navItems = document.querySelectorAll('.notification-nav-item');
+        navItems.forEach(function(navItem) {
+            navItem.addEventListener('click', function() {
+                const target = this.getAttribute('data-target');
+                
+                // 更新激活状态
+                navItems.forEach(function(item) {
+                    item.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // 显示对应内容
+                const sections = document.querySelectorAll('.notification-section');
+                sections.forEach(function(section) {
+                    section.style.display = 'none';
+                });
+                document.getElementById(target).style.display = 'block';
+                
+                // 如果是点击查看，则标记为已读
+                if (target === 'like-notifications') {
+                    markAsRead('like');
+                } else if (target === 'reply-notifications') {
+                    markAsRead('reply');
+                } else if (target === 'system-notifications') {
+                    markAsRead('system');
+                }
+            });
+        });
+        
+        // 点击通知项标记为已读
+        const notificationItems = document.querySelectorAll('.notification-item');
+        notificationItems.forEach(function(item) {
+            item.addEventListener('click', function() {
+                this.classList.remove('notification-unread');
+                // 可以在这里添加跳转到相关内容的逻辑
+            });
+        });
+        
+        // 更新未读消息数量
+        function updateUnreadCount() {
+            // 点赞未读数
+            const likeUnread = document.querySelectorAll('#like-notifications .notification-unread').length;
+            const likeCountBadges = document.querySelectorAll('.like-count');
+            likeCountBadges.forEach(function(badge) {
+                badge.textContent = likeUnread;
+                if (likeUnread === 0) {
+                    badge.style.display = 'none';
+                } else {
+                    badge.style.display = 'inline-block';
+                }
+            });
+            
+            // 回复未读数
+            const replyUnread = document.querySelectorAll('#reply-notifications .notification-unread').length;
+            const replyCountBadges = document.querySelectorAll('.reply-count');
+            replyCountBadges.forEach(function(badge) {
+                badge.textContent = replyUnread;
+                if (replyUnread === 0) {
+                    badge.style.display = 'none';
+                } else {
+                    badge.style.display = 'inline-block';
+                }
+            });
+            
+            // 系统未读数
+            const systemUnread = document.querySelectorAll('#system-notifications .notification-unread').length;
+            const systemCountBadges = document.querySelectorAll('.system-count');
+            systemCountBadges.forEach(function(badge) {
+                badge.textContent = systemUnread;
+                if (systemUnread === 0) {
+                    badge.style.display = 'none';
+                } else {
+                    badge.style.display = 'inline-block';
+                }
+            });
+        }
+        
+        // 标记特定类型的通知为已读
+        function markAsRead(type) {
+            fetch('/api/notifications/mark-read/' + type + '/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // 更新UI
+                    if (type === 'like') {
+                        document.querySelectorAll('#like-notifications .notification-unread').forEach(function(item) {
+                            item.classList.remove('notification-unread');
+                        });
+                        document.querySelectorAll('.like-count').forEach(function(badge) {
+                            badge.textContent = '0';
+                            badge.style.display = 'none';
+                        });
+                    } else if (type === 'reply') {
+                        document.querySelectorAll('#reply-notifications .notification-unread').forEach(function(item) {
+                            item.classList.remove('notification-unread');
+                        });
+                        document.querySelectorAll('.reply-count').forEach(function(badge) {
+                            badge.textContent = '0';
+                            badge.style.display = 'none';
+                        });
+                    } else if (type === 'system') {
+                        document.querySelectorAll('#system-notifications .notification-unread').forEach(function(item) {
+                            item.classList.remove('notification-unread');
+                        });
+                        document.querySelectorAll('.system-count').forEach(function(badge) {
+                            badge.textContent = '0';
+                            badge.style.display = 'none';
+                        });
+                    }
+                }
+            });
+        }
+        
+        // 获取CSRF Token
+        function getCSRFToken() {
+            return document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+        }
+    });
+</script>
+{% endblock %} 

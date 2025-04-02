@@ -29,17 +29,27 @@ urlpatterns = [
     path("register/", views.register_view, name="register"),
     path("logout/", views.logout_view, name="logout"),
     path("dashboard/", views.dashboard, name="dashboard"),
+
     path("settings/", views.settings_view, name="settings"),
     path("settings/save-hidden-subjects/", views.save_hidden_subjects, name="save_hidden_subjects"),
     path("settings/delete-account/", views.delete_my_account, name="delete_my_account"),
     path("settings/update-username/", views.update_username, name="update_username"),
     path("settings/change-password/", views.change_password, name="change_password"),
+
     path("teacher/dashboard/", views.teacher_dashboard, name="teacher_dashboard"),
     path("assignments/create/", views.create_assignment, name="create_assignment"),
     path("assignments/<int:pk>/", views.assignment_detail, name="assignment_detail"),
     path("assignments/<int:pk>/edit/", views.edit_assignment, name="edit_assignment"),
+    
     path("hot-topics/", views.hot_topics_view, name="hot_topics"),
     path("hot-topics/<int:topic_id>/", views.hot_topic_detail_view, name="hot_topic_detail"),
+
+    path("notifications/", views.user_notifications, name="notifications"),
+    path("debug/device-detection/", views.test_device_detection, name="test_device_detection"),
+    path("api/notifications/mark-read/", views.mark_notifications_read, name="mark_notifications_read"),
+    path("api/notifications/mark-read/<str:notification_type>/", views.mark_notifications_read, name="mark_notifications_read_by_type"),
+    path("api/notifications/unread-count/", views.unread_notifications_count, name="unread_notifications_count"),
+
     path("api/toggle-assignment/", views.toggle_assignment_completion, name="toggle_assignment"),
     path("api/create-admin/", views.create_admin_user, name="create_admin"),
     path("api/init-subjects/", views.init_subjects, name="init_subjects"),

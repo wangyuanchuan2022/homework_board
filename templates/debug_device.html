@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}设备检测调试{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">设备检测调试信息</h4>
+        </div>
+        <div class="card-body">
+            <h5>IP信息</h5>
+            <ul class="list-group mb-4">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>X-Forwarded-For</span>
+                    <span class="badge bg-secondary">{{ debug_info.IP信息.X_Forwarded_For }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>REMOTE_ADDR</span>
+                    <span class="badge bg-secondary">{{ debug_info.IP信息.REMOTE_ADDR }}</span>
+                </li>
+            </ul>
+            
+            <h5>User-Agent</h5>
+            <div class="bg-light p-3 mb-4 rounded">
+                <code>{{ debug_info.User_Agent }}</code>
+            </div>
+            
+            <h5>设备记录结果</h5>
+            <div class="alert {% if debug_info.设备记录结果 == '成功' %}alert-success{% else %}alert-danger{% endif %}">
+                {{ debug_info.设备记录结果 }}
+            </div>
+            
+            <h5>最近设备记录</h5>
+            {% if debug_info.最近设备记录 %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>设备名称</th>
+                                <th>IP地址</th>
+                                <th>登录时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in debug_info.最近设备记录 %}
+                                <tr>
+                                    <td>{{ record.设备名称 }}</td>
+                                    <td>{{ record.IP地址 }}</td>
+                                    <td>{{ record.登录时间 }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-warning">暂无设备记录</div>
+            {% endif %}
+            
+            <div class="mt-4">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">返回仪表盘</a>
+                <a href="javascript:location.reload()" class="btn btn-primary">重新检测</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

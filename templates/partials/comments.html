@@ -44,8 +44,8 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="comment-content mb-3">
-                            {{ comment.content }}
+                        <div class="comment-content mb-3 markdown-content">
+                            {{ comment.html_content|safe }}
                         </div>
                         <div class="comment-actions">
                             <a href="javascript:void(0);" class="reply-btn text-primary" data-id="{{ comment.id }}">
@@ -63,6 +63,9 @@
                             <form class="replyCommentForm" data-parent-id="{{ comment.id }}" data-topic-id="{{ topic.id }}">
                                 <div class="mb-3">
                                     <textarea class="form-control reply-content" rows="2" placeholder="回复 {% if comment.is_anonymous %}匿名用户{% else %}{{ comment.author.username }}{% endif %}" required></textarea>
+                                    <small class="form-text text-muted">
+                                        <i class="bi bi-markdown me-1"></i>支持Markdown语法和LaTeX数学公式
+                                    </small>
                                 </div>
                                 <div class="mb-2 form-check">
                                     <input class="form-check-input is-anonymous-reply" type="checkbox" id="isAnonymousReply-{{ comment.id }}">
