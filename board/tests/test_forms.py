@@ -6,7 +6,10 @@ from board.forms import (
     AssignmentForm,
     BatchAssignmentForm,
     UpdateUsernameForm,
-    ChangePasswordForm
+    ChangePasswordForm,
+    RatingForm,
+    UserRatingForm,
+    RatingCommentForm
 )
 from board.models import User, Subject
 import datetime
@@ -251,4 +254,134 @@ class BatchAssignmentFormTest(TestCase):
         form = BatchAssignmentForm(data=form_data)
         self.assertFalse(form.is_valid())
         self.assertIn('__all__', form.errors)
-        self.assertIn('结束日期必须晚于开始日期', str(form.errors['__all__'])) 
+        self.assertIn('结束日期必须晚于开始日期', str(form.errors['__all__']))
+
+
+class RatingFormTest(TestCase):
+    """测试评分表单"""
+    
+    def test_valid_rating_form(self):
+        """测试有效的评分表单"""
+        form_data = {
+            'title': '测试评分标题',
+            'description': '测试评分描述'
+        }
+        form = RatingForm(data=form_data)
+        self.assertTrue(form.is_valid())
+    
+    def test_valid_rating_form_with_anonymous(self):
+        """测试带匿名选项的有效评分表单"""
+        form_data = {
+            'title': '测试评分标题',
+            'description': '测试评分描述',
+            'is_anonymous': True
+        }
+        form = RatingForm(data=form_data)
+        self.assertTrue(form.is_valid())
+    
+    def test_invalid_rating_form_no_title(self):
+        """测试没有标题的无效评分表单"""
+        form_data = {
+            'description': '测试评分描述'
+        }
+        form = RatingForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('title', form.errors)
+    
+    def test_invalid_rating_form_no_description(self):
+        """测试没有描述的无效评分表单"""
+        form_data = {
+            'title': '测试评分标题'
+        }
+        form = RatingForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('description', form.errors)
+    
+    def test_title_max_length(self):
+        """测试标题最大长度限制"""
+        # 创建一个长度超过200的标题
+        long_title = 'a' * 201
+        form_data = {
+            'title': long_title,
+            'description': '测试评分描述'
+        }
+        form = RatingForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('title', form.errors)
+        self.assertIn('Ensure this value has at most 200 characters', str(form.errors['title']))
+
+
+class UserRatingFormTest(TestCase):
+    """测试用户评分表单"""
+    
+    def test_valid_user_rating_form(self):
+        """测试有效的用户评分表单"""
+        form_data = {
+            'score': 4
+        }
+        form = UserRatingForm(data=form_data)
+        self.assertTrue(form.is_valid())
+    
+    def test_invalid_user_rating_form_no_score(self):
+        """测试没有分数的无效用户评分表单"""
+        form_data = {}
+        form = UserRatingForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('score', form.errors)
+    
+    def test_invalid_user_rating_form_score_too_low(self):
+        """测试分数太低的无效用户评分表单"""
+        form_data = {
+            'score': 0  # 最小值为1
+        }
+        form = UserRatingForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('score', form.errors)
+        self.assertIn('Ensure this value is greater than or equal to 1', str(form.errors['score']))
+    
+    def test_invalid_user_rating_form_score_too_high(self):
+        """测试分数太高的无效用户评分表单"""
+        form_data = {
+            'score': 6  # 最大值为5
+        }
+        form = UserRatingForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('score', form.errors)
+        self.assertIn('Ensure this value is less than or equal to 5', str(form.errors['score']))
+
+
+class RatingCommentFormTest(TestCase):
+    """测试评分评论表单"""
+    
+    def test_valid_rating_comment_form(self):
+        """测试有效的评分评论表单"""
+        form_data = {
+            'content': '测试评论内容'
+        }
+        form = RatingCommentForm(data=form_data)
+        self.assertTrue(form.is_valid())
+    
+    def test_valid_rating_comment_form_with_anonymous(self):
+        """测试带匿名选项的有效评分评论表单"""
+        form_data = {
+            'content': '测试评论内容',
+            'is_anonymous': True
+        }
+        form = RatingCommentForm(data=form_data)
+        self.assertTrue(form.is_valid())
+    
+    def test_invalid_rating_comment_form_no_content(self):
+        """测试没有内容的无效评分评论表单"""
+        form_data = {}
+        form = RatingCommentForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('content', form.errors)
+    
+    def test_invalid_rating_comment_form_empty_content(self):
+        """测试内容为空的无效评分评论表单"""
+        form_data = {
+            'content': ''
+        }
+        form = RatingCommentForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('content', form.errors) 

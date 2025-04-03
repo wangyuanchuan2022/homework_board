@@ -144,13 +144,16 @@
                             <div class="notification-item{% if not notification.is_read %} notification-unread{% endif %}" data-id="{{ notification.id }}">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div>
-                                        <strong>{{ notification.sender.username }}</strong> 点赞了你的{% if notification.comment %}评论{% else %}热搜{% endif %}
+                                        <strong>{{ notification.sender.username }}</strong> 
+                                        {% if notification.comment %}
+                                            点赞了你的评论
+                                        {% elif notification.topic %}
+                                            点赞了你的热搜
+                                        {% else %}
+                                            点赞了你的内容
+                                        {% endif %}
                                         <p class="mb-1">
-                                            {% if notification.comment %}
-                                                "{{ notification.comment.content|truncatechars:50 }}"
-                                            {% else %}
-                                                "{{ notification.topic.title|truncatechars:50 }}"
-                                            {% endif %}
+                                            "{{ notification.content|truncatechars:100 }}"
                                         </p>
                                     </div>
                                     <small class="notification-time">{{ notification.created_at|date:"Y-m-d H:i" }}</small>
@@ -167,7 +170,7 @@
             </div>
             
             <!-- 回复通知 -->
-            <div class="notification-section" id="reply-notifications" style="display: none;">
+            <div class="notification-section" id="reply-notifications">
                 <h3><i class="bi bi-chat-dots me-2"></i>我的回复</h3>
                 {% if replies %}
                     <div class="notification-list">
@@ -176,9 +179,9 @@
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div>
                                         <p class="mb-1">{{ notification.content }}</p>
-                                        <p class="mb-0 text-muted small">
-                                            话题：{{ notification.topic.title|truncatechars:30 }}
-                                        </p>
+                                        <a href="{% if notification.topic %}{% url 'hot_topic_detail' notification.topic.id %}{% endif %}" class="notification-link">
+                                            查看详情
+                                        </a>
                                     </div>
                                     <small class="notification-time">{{ notification.created_at|date:"Y-m-d H:i" }}</small>
                                 </div>
@@ -187,7 +190,7 @@
                     </div>
                 {% else %}
                     <div class="no-notifications">
-                        <i class="bi bi-chat"></i>
+                        <i class="bi bi-inbox"></i>
                         <p>没有回复通知</p>
                     </div>
                 {% endif %}
@@ -229,9 +232,7 @@
                                     <div>
                                         <h5 class="mb-1">{{ device.device_name }}</h5>
                                         <p class="mb-0">IP地址: {{ device.ip_address }}</p>
-                                        {% if device.location %}
-                                            <p class="mb-0">位置: {{ device.location }}</p>
-                                        {% endif %}
+                                        <p class="mb-0">位置: {{ device.location|default:"未知位置" }}</p>
                                     </div>
                                     <small class="notification-time">{{ device.login_time|date:"Y-m-d H:i" }}</small>
                                 </div>

@@ -20,6 +20,14 @@
                     <span>REMOTE_ADDR</span>
                     <span class="badge bg-secondary">{{ debug_info.IP信息.REMOTE_ADDR }}</span>
                 </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>当前IP</span>
+                    <span class="badge bg-primary">{{ debug_info.当前IP }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>当前位置</span>
+                    <span class="badge bg-info">{{ debug_info.当前位置 }}</span>
+                </li>
             </ul>
             
             <h5>User-Agent</h5>
@@ -40,6 +48,7 @@
                             <tr>
                                 <th>设备名称</th>
                                 <th>IP地址</th>
+                                <th>位置信息</th>
                                 <th>登录时间</th>
                             </tr>
                         </thead>
@@ -48,6 +57,7 @@
                                 <tr>
                                     <td>{{ record.设备名称 }}</td>
                                     <td>{{ record.IP地址 }}</td>
+                                    <td>{{ record.位置信息|default:"未知" }}</td>
                                     <td>{{ record.登录时间 }}</td>
                                 </tr>
                             {% endfor %}

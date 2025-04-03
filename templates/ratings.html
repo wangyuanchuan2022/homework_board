@@ -1,0 +1,446 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}评分系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 页面整体风格 */
+    .ratings-container {
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    /* 顶部导航和操作区 */
+    .ratings-header {
+        border-bottom: 1px solid #e9ecef;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .page-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #343a40;
+        display: flex;
+        align-items: center;
+    }
+    
+    .page-title i {
+        margin-right: 0.5rem;
+        color: #007bff;
+    }
+    
+    .action-buttons {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .btn-create-rating {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        font-weight: 600;
+        transition: all 0.2s;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        padding: 0 1.2rem;
+    }
+    
+    .btn-create-rating:hover {
+        background-color: #0056b3;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+        color: white;
+    }
+    
+    .btn-outline-secondary, .btn-outline-primary {
+        height: 38px;
+        display: flex;
+        align-items: center;
+        min-width: 100px;
+    }
+    
+    .form-control {
+        height: 38px;
+        border-radius: 4px;
+    }
+    
+    .rating-actions-form {
+        display: flex;
+        align-items: center;
+    }
+    
+    /* 评分卡片样式 */
+    .ratings-list {
+        margin-top: 1.5rem;
+    }
+    
+    .rating-card {
+        transition: all 0.3s;
+        height: 100%;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 8px;
+        overflow: hidden;
+        background: #fff;
+    }
+    
+    .rating-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+        border-color: rgba(0, 123, 255, 0.3);
+    }
+    
+    .rating-item {
+        margin-bottom: 1.5rem;
+    }
+    
+    .card-body {
+        padding: 1.25rem;
+    }
+    
+    .rating-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #212529;
+    }
+    
+    .rating-title:hover {
+        color: #007bff;
+    }
+    
+    .rating-meta {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .rating-meta i {
+        margin-right: 0.3rem;
+        color: #adb5bd;
+    }
+    
+    .star-rating {
+        color: #ffc107;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .rating-score {
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-left: 0.5rem;
+        color: #212529;
+    }
+    
+    .rating-description {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        font-size: 0.9rem;
+        color: #495057;
+        margin-bottom: 0.75rem;
+        line-height: 1.5;
+    }
+    
+    .rating-stats {
+        font-size: 0.85rem;
+        color: #6c757d;
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .rating-stats i {
+        color: #6c757d;
+    }
+    
+    .rating-comments {
+        margin-top: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        padding: 0.75rem;
+    }
+    
+    .rating-comment {
+        padding-left: 10px;
+        border-left: 3px solid #007bff;
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+    }
+    
+    .hot-comment-author {
+        font-weight: 500;
+        color: #495057;
+    }
+    
+    .card-footer {
+        background-color: #f8f9fa;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+        padding: 0.75rem 1.25rem;
+    }
+    
+    .btn-view-details {
+        font-size: 0.85rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+    
+    .btn-view-details:hover {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    /* 无评分时的提示样式 */
+    .no-ratings {
+        text-align: center;
+        padding: 3rem 0;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .no-ratings i {
+        font-size: 3rem;
+        color: #adb5bd;
+        margin-bottom: 1rem;
+    }
+    
+    .no-ratings h3 {
+        font-size: 1.5rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+    
+    .no-ratings p {
+        color: #868e96;
+        margin-bottom: 1.5rem;
+    }
+    
+    .no-ratings .btn-create-rating {
+        margin: 0 auto;
+        display: inline-flex;
+    }
+    
+    /* 分页样式 */
+    .pagination {
+        margin-top: 2rem;
+    }
+    
+    .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+    
+    .page-link {
+        color: #007bff;
+    }
+    
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+        .ratings-container {
+            padding: 1rem;
+        }
+        
+        .header-container {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .action-buttons {
+            margin-top: 1rem;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+        
+        .rating-actions-form {
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        .page-title {
+            margin-bottom: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="ratings-container">
+        <!-- 页面顶部标题和按钮栏 -->
+        <div class="ratings-header">
+            <div class="header-container d-flex justify-content-between align-items-center">
+                <h1 class="page-title"><i class="fas fa-star"></i>评分系统</h1>
+                <div class="action-buttons">
+                    <a href="{% url 'create_rating' %}" class="btn btn-create-rating">
+                        <i class="fas fa-plus me-1"></i> 创建评分
+                    </a>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-sort me-1"></i> 排序
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                            <li><a class="dropdown-item {% if sort_by == 'newest' %}active{% endif %}" href="?sort_by=newest">最新发布</a></li>
+                            <li><a class="dropdown-item {% if sort_by == 'rating' %}active{% endif %}" href="?sort_by=rating">评分最高</a></li>
+                            <li><a class="dropdown-item {% if sort_by == 'popular' %}active{% endif %}" href="?sort_by=popular">最多评价</a></li>
+                            <li><a class="dropdown-item {% if sort_by == 'hot' %}active{% endif %}" href="?sort_by=hot">热门评分</a></li>
+                        </ul>
+                    </div>
+                    <form class="rating-actions-form" method="GET" action="{% url 'ratings' %}">
+                        <input class="form-control me-2" type="search" placeholder="搜索评分..." name="q" value="{{ query }}" aria-label="Search">
+                        <button class="btn btn-outline-primary" type="submit"><i class="fas fa-search me-1"></i> 搜索</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {% if ratings %}
+        <div class="ratings-list">
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for rating in ratings %}
+                <div class="col rating-item">
+                    <div class="card rating-card h-100">
+                        <div class="card-body">
+                            <a href="{% url 'rating_detail' rating.id %}" class="text-decoration-none text-reset">
+                                <h5 class="rating-title">{{ rating.title }}</h5>
+                            </a>
+                            <div class="rating-meta">
+                                <i class="fas fa-user-circle"></i> 
+                                {% if rating.is_anonymous %}
+                                    匿名用户
+                                {% else %}
+                                    {{ rating.author.username }}
+                                {% endif %} 
+                                <span class="mx-2">·</span> 
+                                <i class="far fa-clock"></i> {{ rating.created_at|date:"Y-m-d H:i" }}
+                            </div>
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="star-rating">
+                                    {% for i in "12345" %}
+                                    {% if forloop.counter <= rating.average_score %}
+                                    <i class="fas fa-star"></i>
+                                    {% elif forloop.counter <= rating.average_score|add:"0.5" %}
+                                    <i class="fas fa-star-half-alt"></i>
+                                    {% else %}
+                                    <i class="far fa-star"></i>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <div class="rating-score">{{ rating.average_score }}</div>
+                            </div>
+                            <div class="rating-description">
+                                {{ rating.description|safe|truncatechars:150 }}
+                            </div>
+                            <div class="rating-stats">
+                                <span><i class="fas fa-user-check me-1"></i>{{ rating.ratings_count }} 人评分</span>
+                                <span><i class="fas fa-comment me-1"></i>{{ rating.comments.count }} 条评论</span>
+                                <span><i class="fas fa-fire {% if rating.heat_score > 20 %}text-danger{% endif %} me-1"></i>{{ rating.heat_score|floatformat:1 }} 热度</span>
+                            </div>
+
+                            {% if rating.hot_comments %}
+                            <div class="rating-comments">
+                                <div class="small fw-bold mb-1">热门评论</div>
+                                {% for comment in rating.hot_comments|slice:":1" %}
+                                <div class="rating-comment">
+                                    <span class="hot-comment-author">
+                                    {% if comment.is_anonymous %}
+                                        匿名用户
+                                    {% else %}
+                                        {{ comment.author.username }}
+                                    {% endif %}:
+                                    </span>
+                                    {{ comment.content|truncatechars:50 }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-transparent d-flex justify-content-between align-items-center">
+                            <small class="text-muted">{{ rating.created_at|timesince }}前</small>
+                            <a href="{% url 'rating_detail' rating.id %}" class="btn btn-sm btn-outline-primary btn-view-details">
+                                <i class="fas fa-external-link-alt me-1"></i> 查看详情
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 分页 -->
+        {% if ratings.has_other_pages %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if ratings.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ ratings.previous_page_number }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link" aria-hidden="true">&laquo;</span>
+                </li>
+                {% endif %}
+
+                {% for i in ratings.paginator.page_range %}
+                    {% if ratings.number == i %}
+                    <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                    {% else %}
+                    <li class="page-item"><a class="page-link" href="?page={{ i }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if query %}&q={{ query }}{% endif %}">{{ i }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if ratings.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ ratings.next_page_number }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link" aria-hidden="true">&raquo;</span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="no-ratings">
+            <div class="mb-3"><i class="fas fa-search"></i></div>
+            <h3>暂无评分</h3>
+            <p>成为第一个发布评分的用户吧！</p>
+            <a href="{% url 'create_rating' %}" class="btn btn-create-rating mt-3">
+                创建评分
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 页面加载效果
+        const ratingCards = document.querySelectorAll('.rating-card');
+        ratingCards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.opacity = "1";
+            }, 100 * index);
+        });
+    });
+</script>
+{% endblock %} 

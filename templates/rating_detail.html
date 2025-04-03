@@ -1,0 +1,1067 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ rating.title }} - 评分详情{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 整体页面容器 */
+    .rating-detail-container {
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    /* 评分详情头部 */
+    .rating-header {
+        margin-bottom: 1.5rem;
+    }
+    
+    .page-navigation {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+    }
+    
+    .page-navigation .btn {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .rating-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: #212529;
+    }
+    
+    .rating-meta {
+        display: flex;
+        align-items: center;
+        color: #6c757d;
+        font-size: 0.9rem;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    .rating-meta i {
+        color: #adb5bd;
+        margin-right: 0.25rem;
+    }
+    
+    /* 评分区域 */
+    .rating-content {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .star-rating {
+        color: #ffc107;
+        font-size: 1.5rem;
+    }
+    
+    .star-rating .far, .star-rating .fas {
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+    
+    .star-rating .far:hover, .star-rating .fas:hover {
+        transform: scale(1.2);
+    }
+    
+    /* 用户评分区域 */
+    .user-rating-card {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        transition: all 0.2s;
+    }
+    
+    .user-rating-card:hover {
+        border-color: rgba(0, 123, 255, 0.3);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+    
+    .user-rating-header {
+        background-color: rgba(0, 123, 255, 0.05);
+        padding: 0.75rem 1.25rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+    }
+    
+    .user-rating-content {
+        padding: 1.25rem;
+    }
+    
+    #submitRating {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+    
+    #submitRating:hover:not(:disabled) {
+        background-color: #0056b3;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    #submitRating:disabled {
+        background-color: #6c757d;
+        opacity: 0.6;
+    }
+    
+    /* 评分详情和评论区 */
+    .detail-description, .comments-section {
+        background-color: #fff;
+        border-radius: 8px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        margin-bottom: 1.5rem;
+    }
+    
+    .section-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        background-color: rgba(0, 0, 0, 0.02);
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .section-header h5 {
+        margin-bottom: 0;
+        font-weight: 600;
+        color: #343a40;
+    }
+    
+    .section-header .badge {
+        background-color: #007bff;
+        color: white;
+        font-weight: 600;
+    }
+    
+    .section-content {
+        padding: 1.5rem;
+    }
+    
+    /* Markdown 内容样式 */
+    .markdown-content {
+        padding: 0;
+        line-height: 1.6;
+    }
+    
+    .markdown-content img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 4px;
+        margin: 1rem 0;
+    }
+    
+    .markdown-content code {
+        background-color: #f8f9fa;
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+        font-size: 0.9em;
+    }
+    
+    .markdown-content pre {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.25rem;
+        overflow-x: auto;
+        margin: 1rem 0;
+    }
+    
+    .markdown-content h1, 
+    .markdown-content h2, 
+    .markdown-content h3 {
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+    
+    .markdown-content p {
+        margin-bottom: 1rem;
+    }
+    
+    .markdown-content ul, 
+    .markdown-content ol {
+        margin-bottom: 1rem;
+        padding-left: 1.5rem;
+    }
+    
+    /* 评论表单 */
+    .comment-form {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .comment-form textarea {
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        resize: vertical;
+        transition: all 0.2s;
+    }
+    
+    .comment-form textarea:focus {
+        border-color: #80bdff;
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+    
+    .comment-form .form-check-input:checked {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+    
+    .comment-form button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        font-weight: 600;
+        padding: 0.5rem 1.25rem;
+        transition: all 0.2s;
+    }
+    
+    .comment-form button:hover {
+        background-color: #0056b3;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* 评论列表 */
+    .comments-list {
+        margin-top: 1rem;
+    }
+    
+    .comment-card {
+        padding: 1rem 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .comment-card:last-child {
+        border-bottom: none;
+    }
+    
+    .comment-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+    
+    .comment-author {
+        font-weight: 600;
+        color: #343a40;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .comment-author i {
+        color: #6c757d;
+    }
+    
+    .comment-time {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+    
+    .comment-content {
+        margin: 0.5rem 0 0.75rem;
+    }
+    
+    .comment-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .comment-actions button {
+        background: none;
+        border: none;
+        padding: 0;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .comment-actions .like-comment-btn {
+        color: #6c757d;
+    }
+    
+    .comment-actions .like-comment-btn i.fas {
+        color: #007bff;
+    }
+    
+    .comment-actions .like-comment-btn:hover {
+        color: #007bff;
+    }
+    
+    .comment-actions .reply-btn {
+        color: #6c757d;
+    }
+    
+    .comment-actions .reply-btn:hover {
+        color: #007bff;
+    }
+    
+    .comment-actions .delete-comment-btn {
+        color: #dc3545;
+    }
+    
+    .comment-actions .delete-comment-btn:hover {
+        color: #bd2130;
+    }
+    
+    /* 回复区域 */
+    .reply-section {
+        margin-top: 0.75rem;
+        margin-left: 2rem;
+        border-left: 3px solid #e9ecef;
+        padding-left: 1rem;
+    }
+    
+    .reply-card {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .reply-card:last-child {
+        border-bottom: none;
+    }
+    
+    .reply-form-container {
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        margin-top: 0.75rem;
+    }
+    
+    /* 评分统计 */
+    .rating-stats {
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+        top: 2rem;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .rating-stats-header {
+        padding: 1rem;
+        background-color: rgba(0, 0, 0, 0.02);
+        margin: -1.5rem -1.5rem 1.5rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        border-top-left-radius: 0.5rem;
+        border-top-right-radius: 0.5rem;
+    }
+    
+    .rating-stats-header h5 {
+        margin-bottom: 0;
+        font-weight: 600;
+    }
+    
+    .rating-overview {
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .average-score {
+        font-size: 2.5rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+    
+    .total-ratings {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-top: 0.5rem;
+    }
+    
+    .score-distributions {
+        margin-bottom: 1.5rem;
+    }
+    
+    .score-distribution {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .score-label {
+        width: 60px;
+        text-align: right;
+        padding-right: 10px;
+        font-size: 0.85rem;
+        color: #495057;
+    }
+    
+    .score-bar {
+        flex-grow: 1;
+        background-color: #e9ecef;
+        height: 8px;
+        border-radius: 4px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .score-bar-fill {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        background-color: #ffc107;
+    }
+    
+    .score-percentage {
+        width: 40px;
+        text-align: right;
+        font-size: 0.75rem;
+        color: #6c757d;
+        padding-left: 10px;
+    }
+    
+    .recent-ratings {
+        margin-top: 1.5rem;
+    }
+    
+    .recent-ratings-header {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .recent-rating-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .recent-rating-item:last-child {
+        border-bottom: none;
+    }
+    
+    .recent-rating-user {
+        font-size: 0.85rem;
+        color: #495057;
+    }
+    
+    .recent-rating-stars {
+        font-size: 0.9rem;
+    }
+    
+    /* 热门评论样式 */
+    .hot-comment {
+        transition: all 0.3s;
+        position: relative;
+    }
+    
+    .hot-comment::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -10px;
+        width: 3px;
+        height: 100%;
+        background: linear-gradient(to bottom, #ff6b6b, transparent);
+    }
+    
+    /* 响应式调整 */
+    @media (max-width: 991.98px) {
+        .rating-stats {
+            position: static;
+            margin-top: 1.5rem;
+        }
+    }
+    
+    @media (max-width: 767.98px) {
+        .rating-detail-container {
+            padding: 1rem;
+        }
+        
+        .section-content {
+            padding: 1rem;
+        }
+        
+        .user-rating-content {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="rating-detail-container">
+        <!-- 页面导航 -->
+        <div class="page-navigation">
+            <a href="{% url 'ratings' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> 返回评分列表
+            </a>
+            
+            {% if user == rating.author or user.user_type == 'admin' %}
+            <a href="{% url 'delete_rating' rating.id %}" class="btn btn-danger btn-sm" onclick="return confirm('确定要删除此评分项目吗？此操作不可撤销。');">
+                <i class="fas fa-trash-alt"></i> 删除评分
+            </a>
+            {% endif %}
+        </div>
+        
+        <div class="rating-header">
+            <h1 class="rating-title">{{ rating.title }}</h1>
+            
+            <div class="rating-meta">
+                <span><i class="fas fa-user-circle"></i> 
+                {% if rating.is_anonymous %}
+                    匿名用户
+                {% else %}
+                    {{ rating.author.username }}
+                {% endif %}
+                </span>
+                <span><i class="far fa-clock"></i> {{ rating.created_at|date:"Y-m-d H:i" }}</span>
+                <span><i class="fas fa-user-check"></i> {{ rating.ratings_count }} 人评分</span>
+                <span><i class="fas fa-comment"></i> {{ rating.comments.count }} 条评论</span>
+                <span><i class="fas fa-fire {% if rating.heat_score > 20 %}text-danger{% endif %}"></i> {{ rating.heat_score|floatformat:1 }} 热度</span>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="rating-content">
+                    <!-- 用户评分区域 -->
+                    {% if user.is_authenticated %}
+                    <div class="user-rating-card">
+                        <div class="user-rating-header">
+                            <h5 class="mb-0">您的评分</h5>
+                        </div>
+                        <div class="user-rating-content">
+                            <form method="post" action="{% url 'rate' rating.id %}" id="ratingForm">
+                                {% csrf_token %}
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="star-rating me-3" id="starRating">
+                                        {% for i in "12345" %}
+                                        <i class="{% if user_rating and i|add:'0' <= user_rating.score %}fas{% else %}far{% endif %} fa-star" data-value="{{ i }}"></i>
+                                        {% endfor %}
+                                    </div>
+                                    <span id="ratingText" class="{% if not user_rating %}text-muted{% endif %}">
+                                        {% if user_rating %}
+                                        您的评分：{{ user_rating.score }} 星
+                                        {% else %}
+                                        点击星星评分
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                {{ user_rating_form.score }}
+                                <button type="submit" class="btn" id="submitRating" {% if not user_rating %}disabled{% endif %}>提交评分</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- 详情描述 -->
+                    <div class="detail-description">
+                        <div class="section-header">
+                            <h5>详情描述</h5>
+                        </div>
+                        <div class="section-content">
+                            <div class="markdown-content">
+                                {{ rating.html_description|safe }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 评论区 -->
+                    <div class="comments-section">
+                        <div class="section-header">
+                            <h5>评论讨论</h5>
+                            <div class="d-flex align-items-center">
+                                <span class="badge rounded-pill me-3">{{ rating.comments.count }}</span>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-light dropdown-toggle" type="button" id="commentSortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-sort me-1"></i>排序
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="commentSortDropdown">
+                                        <li><a class="dropdown-item comment-sort-option active" href="javascript:void(0)" data-sort="newest">最新</a></li>
+                                        <li><a class="dropdown-item comment-sort-option" href="javascript:void(0)" data-sort="hot">热度</a></li>
+                                        <li><a class="dropdown-item comment-sort-option" href="javascript:void(0)" data-sort="likes">点赞数</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="section-content">
+                            {% if user.is_authenticated %}
+                            <div class="comment-form">
+                                <form method="post" action="{% url 'comment_rating' rating.id %}">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        {{ comment_form.content }}
+                                    </div>
+                                    <div class="mb-3 form-check">
+                                        {{ comment_form.is_anonymous }}
+                                        <label class="form-check-label" for="{{ comment_form.is_anonymous.id_for_label }}">
+                                            匿名评论
+                                        </label>
+                                    </div>
+                                    <button type="submit" class="btn">发表评论</button>
+                                </form>
+                            </div>
+                            {% endif %}
+                            
+                            {% if comments %}
+                            <div class="comments-list" id="commentsList">
+                                {% for comment in comments %}
+                                <div class="comment-card">
+                                    <div class="comment-header">
+                                        <div class="commenter-info">
+                                            <div class="commenter-meta">
+                                                <span class="commenter-name">
+                                                    {% if comment.is_anonymous %}
+                                                        匿名用户
+                                                    {% else %}
+                                                        {{ comment.author.username }}
+                                                    {% endif %}
+                                                </span>
+                                                <span class="comment-date">{{ comment.created_at|date:"Y-m-d H:i" }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="comment-content">
+                                        {{ comment.html_content|safe }}
+                                    </div>
+                                    <div class="comment-actions">
+                                        <button class="like-comment-btn" data-comment-id="{{ comment.id }}">
+                                            <i class="{% if user in comment.likes.all %}fas{% else %}far{% endif %} fa-thumbs-up"></i>
+                                            <span class="likes-count">{{ comment.likes_count }}</span>
+                                        </button>
+                                        {% if user.is_authenticated %}
+                                        <button class="reply-btn" data-comment-id="{{ comment.id }}">
+                                            <i class="far fa-comment"></i> 回复
+                                        </button>
+                                        {% endif %}
+                                        {% if user == comment.author or user.user_type == 'admin' %}
+                                        <button class="delete-comment-btn" data-comment-id="{{ comment.id }}">
+                                            <i class="far fa-trash-alt"></i> 删除
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if comment.replies.exists %}
+                                    <div class="reply-section">
+                                        {% for reply in comment.replies.all %}
+                                        <div class="reply-card">
+                                            <div class="comment-header">
+                                                <div class="commenter-info">
+                                                    <div class="commenter-meta">
+                                                        <span class="commenter-name">
+                                                            {% if reply.is_anonymous %}
+                                                                匿名用户
+                                                            {% else %}
+                                                                {{ reply.author.username }}
+                                                            {% endif %}
+                                                        </span>
+                                                        <span class="comment-date">{{ reply.created_at|date:"Y-m-d H:i" }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="comment-content">
+                                                {{ reply.html_content|safe }}
+                                            </div>
+                                            <div class="comment-actions">
+                                                <button class="like-comment-btn" data-comment-id="{{ reply.id }}">
+                                                    <i class="{% if user in reply.likes.all %}fas{% else %}far{% endif %} fa-thumbs-up"></i>
+                                                    <span class="likes-count">{{ reply.likes_count }}</span>
+                                                </button>
+                                                {% if user == reply.author or user.user_type == 'admin' %}
+                                                <button class="delete-comment-btn" data-comment-id="{{ reply.id }}">
+                                                    <i class="far fa-trash-alt"></i> 删除
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- 回复表单，默认隐藏 -->
+                                    {% if user.is_authenticated %}
+                                    <div class="reply-form-container d-none" id="replyForm-{{ comment.id }}">
+                                        <form method="post" action="{% url 'reply_comment' comment.id %}">
+                                            {% csrf_token %}
+                                            <div class="mb-3">
+                                                <textarea name="content" rows="2" class="form-control" placeholder="写下您的回复..."></textarea>
+                                            </div>
+                                            <div class="mb-3 form-check">
+                                                <input type="checkbox" class="form-check-input" name="is_anonymous" id="isAnonymous-{{ comment.id }}">
+                                                <label class="form-check-label" for="isAnonymous-{{ comment.id }}">匿名回复</label>
+                                            </div>
+                                            <div class="d-flex gap-2">
+                                                <button type="submit" class="btn btn-sm btn-primary">回复</button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary cancel-reply-btn" data-comment-id="{{ comment.id }}">取消</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- 分页 -->
+                            {% if comments.has_other_pages %}
+                            <nav aria-label="Page navigation" class="mt-4">
+                                <ul class="pagination justify-content-center">
+                                    {% if comments.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ comments.previous_page_number }}" aria-label="Previous">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link" aria-hidden="true">&laquo;</span>
+                                    </li>
+                                    {% endif %}
+
+                                    {% for i in comments.paginator.page_range %}
+                                    {% if comments.number == i %}
+                                    <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                                    {% else %}
+                                    <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
+                                    {% endif %}
+                                    {% endfor %}
+
+                                    {% if comments.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ comments.next_page_number }}" aria-label="Next">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link" aria-hidden="true">&raquo;</span>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                            {% endif %}
+                            
+                            {% else %}
+                            <div class="text-center py-4">
+                                <p class="text-muted">暂无评论，快来发表您的看法吧！</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="rating-stats">
+                    <div class="rating-stats-header">
+                        <h5>评分统计</h5>
+                    </div>
+                    <div class="rating-overview">
+                        <div class="average-score">{{ rating.average_score }}</div>
+                        <div class="star-rating mb-2 justify-content-center d-flex">
+                            {% for i in "12345" %}
+                            {% if forloop.counter <= rating.average_score %}
+                            <i class="fas fa-star"></i>
+                            {% elif forloop.counter <= rating.average_score|add:"0.5" %}
+                            <i class="fas fa-star-half-alt"></i>
+                            {% else %}
+                            <i class="far fa-star"></i>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        <div class="total-ratings">{{ rating.ratings_count }} 人评分</div>
+                    </div>
+                    
+                    <!-- 评分分布 -->
+                    <div class="score-distributions">
+                        {% for score in score_distribution %}
+                        <div class="score-bar-container">
+                            <div class="score-label">{{ score.score }} 星</div>
+                            <div class="score-bar">
+                                <div class="score-bar-fill" style="width: {{ score.percentage }}%"></div>
+                            </div>
+                            <div class="score-percentage">{{ score.percentage }}%</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if recent_ratings %}
+                    <div class="recent-ratings">
+                        <div class="recent-ratings-header">最近评分</div>
+                        {% for user_rating in recent_ratings %}
+                        <div class="recent-rating-item">
+                            <div class="recent-rating-user">
+                                {{ user_rating.user.username }}
+                            </div>
+                            <div class="recent-rating-stars star-rating">
+                                {% for i in "12345" %}
+                                {% if forloop.counter <= user_rating.score %}
+                                <i class="fas fa-star"></i>
+                                {% else %}
+                                <i class="far fa-star"></i>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 处理星级评分
+        const starRating = document.getElementById('starRating');
+        const ratingText = document.getElementById('ratingText');
+        const scoreInput = document.getElementById('id_score');
+        const submitButton = document.getElementById('submitRating');
+        
+        if (starRating) {
+            const stars = starRating.querySelectorAll('.fa-star');
+            
+            stars.forEach(star => {
+                star.addEventListener('mouseover', function() {
+                    const value = this.getAttribute('data-value');
+                    
+                    // 重置所有星星
+                    stars.forEach(s => s.classList.remove('fas'));
+                    stars.forEach(s => s.classList.add('far'));
+                    
+                    // 填充鼠标悬停的星星及之前的星星
+                    for (let i = 0; i < stars.length; i++) {
+                        if (i < value) {
+                            stars[i].classList.remove('far');
+                            stars[i].classList.add('fas');
+                        }
+                    }
+                });
+                
+                star.addEventListener('click', function() {
+                    const value = this.getAttribute('data-value');
+                    
+                    // 设置隐藏字段的值
+                    scoreInput.value = value;
+                    
+                    // 更新评分文本
+                    ratingText.textContent = `您的评分：${value} 星`;
+                    ratingText.classList.remove('text-muted');
+                    
+                    // 启用提交按钮
+                    submitButton.disabled = false;
+                });
+            });
+            
+            // 鼠标移出时恢复原始评分
+            starRating.addEventListener('mouseleave', function() {
+                const currentRating = scoreInput.value || 0;
+                
+                // 重置所有星星
+                stars.forEach(s => s.classList.remove('fas'));
+                stars.forEach(s => s.classList.add('far'));
+                
+                // 填充当前评分的星星
+                for (let i = 0; i < stars.length; i++) {
+                    if (i < currentRating) {
+                        stars[i].classList.remove('far');
+                        stars[i].classList.add('fas');
+                    }
+                }
+            });
+        }
+        
+        // 处理评论点赞
+        const likeButtons = document.querySelectorAll('.like-comment-btn');
+        likeButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const commentId = this.getAttribute('data-comment-id');
+                const icon = this.querySelector('i');
+                const countSpan = this.querySelector('.likes-count');
+                
+                fetch(`/rating/comment/like/${commentId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (data.liked) {
+                            icon.classList.remove('far');
+                            icon.classList.add('fas');
+                        } else {
+                            icon.classList.remove('fas');
+                            icon.classList.add('far');
+                        }
+                        countSpan.textContent = data.likes_count;
+                    }
+                });
+            });
+        });
+        
+        // 处理评论回复
+        const replyButtons = document.querySelectorAll('.reply-btn');
+        replyButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const commentId = this.getAttribute('data-comment-id');
+                const replyForm = document.getElementById(`replyForm-${commentId}`);
+                
+                // 隐藏所有回复表单
+                document.querySelectorAll('.reply-form-container').forEach(form => {
+                    form.classList.add('d-none');
+                });
+                
+                // 显示当前回复表单
+                replyForm.classList.remove('d-none');
+            });
+        });
+        
+        // 处理取消回复
+        const cancelReplyButtons = document.querySelectorAll('.cancel-reply-btn');
+        cancelReplyButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const commentId = this.getAttribute('data-comment-id');
+                const replyForm = document.getElementById(`replyForm-${commentId}`);
+                replyForm.classList.add('d-none');
+            });
+        });
+        
+        // 处理删除评论
+        const deleteButtons = document.querySelectorAll('.delete-comment-btn');
+        deleteButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (confirm('确定要删除此评论吗？此操作不可撤销。')) {
+                    const commentId = this.getAttribute('data-comment-id');
+                    
+                    fetch(`/rating/comment/delete/${commentId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken'),
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // 刷新页面显示更改
+                            window.location.reload();
+                        } else {
+                            alert('删除评论失败：' + data.error);
+                        }
+                    });
+                }
+            });
+        });
+        
+        // 处理评论排序
+        const comments = Array.from(document.querySelectorAll('.comment-card'));
+        const commentsList = document.getElementById('commentsList');
+        const sortOptions = document.querySelectorAll('.comment-sort-option');
+        
+        // 为每个评论添加数据属性
+        comments.forEach(comment => {
+            // 从评论中提取数据
+            const likesElement = comment.querySelector('.likes-count');
+            const likes = likesElement ? parseInt(likesElement.textContent, 10) : 0;
+            
+            // 计算简单的热度值（点赞数 + 回复数）
+            const repliesSection = comment.querySelector('.reply-section');
+            const repliesCount = repliesSection ? repliesSection.querySelectorAll('.reply-card').length : 0;
+            const heat = likes * 2 + repliesCount;
+            
+            // 设置数据属性
+            comment.dataset.likes = likes;
+            comment.dataset.heat = heat;
+            
+            // 为热门评论添加视觉标识
+            if (heat > 3) {
+                comment.classList.add('hot-comment');
+                comment.style.backgroundColor = `rgba(255, 107, 107, ${Math.min(heat / 20, 0.15)})`; 
+            }
+        });
+        
+        // 排序功能
+        sortOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                // 更新激活状态
+                sortOptions.forEach(opt => opt.classList.remove('active'));
+                this.classList.add('active');
+                
+                const sortBy = this.getAttribute('data-sort');
+                sortComments(sortBy);
+            });
+        });
+        
+        function sortComments(sortBy) {
+            const sortedComments = [...comments].sort((a, b) => {
+                if (sortBy === 'newest') {
+                    // 默认顺序就是最新的在前面
+                    return 0;
+                } else if (sortBy === 'hot') {
+                    // 按热度排序
+                    return parseInt(b.dataset.heat, 10) - parseInt(a.dataset.heat, 10);
+                } else if (sortBy === 'likes') {
+                    // 按点赞数排序
+                    return parseInt(b.dataset.likes, 10) - parseInt(a.dataset.likes, 10);
+                }
+            });
+            
+            // 清空并重新添加评论到列表
+            commentsList.innerHTML = '';
+            sortedComments.forEach(comment => commentsList.appendChild(comment));
+        }
+        
+        // 获取CSRF Cookie的辅助函数
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // 页面加载效果
+        setTimeout(() => {
+            document.querySelector('.rating-content').style.opacity = '1';
+        }, 100);
+    });
+</script>
+{% endblock %}

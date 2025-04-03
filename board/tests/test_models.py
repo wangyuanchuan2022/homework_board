@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from django.test import TestCase
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from board.models import Subject, HotTopic, Comment, HotTopicLike, CommentLike, Assignment, CompletionRecord
+from board.models import Subject, HotTopic, Comment, HotTopicLike, CommentLike, Assignment, CompletionRecord, Rating, UserRating, RatingComment, RatingCommentLike
 
 User = get_user_model()
 
@@ -448,4 +448,350 @@ class SubjectModelTests(TestCase):
     def test_str_representation(self):
         """测试科目字符串表示"""
         subject = Subject.objects.create(name='数学')
-        self.assertEqual(str(subject), '数学') 
+        self.assertEqual(str(subject), '数学')
+
+
+class RatingModelTests(TestCase):
+    """测试评分模型的方法"""
+    
+    def setUp(self):
+        """创建测试数据"""
+        # 创建测试用户
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpassword',
+            user_type='student'
+        )
+        
+        # 创建一个评分项目
+        self.rating = Rating.objects.create(
+            title="测试评分标题",
+            description="测试评分描述",
+            author=self.user,
+            is_active=True,
+            is_anonymous=False
+        )
+    
+    def test_average_score(self):
+        """测试平均分数计算"""
+        # 初始应该没有分数
+        self.assertEqual(self.rating.average_score, 0)
+        
+        # 创建三个用户给评分
+        for i in range(3):
+            user = User.objects.create_user(
+                username=f'rater{i}',
+                password='password',
+                user_type='student'
+            )
+            UserRating.objects.create(
+                rating=self.rating,
+                user=user,
+                score=i+3  # 分数为3、4、5
+            )
+        
+        # 平均分数应该是 (3+4+5)/3 = 4.0
+        self.assertEqual(self.rating.average_score, 4.0)
+    
+    def test_ratings_count(self):
+        """测试评分数量计算"""
+        # 初始应该没有评分
+        self.assertEqual(self.rating.ratings_count, 0)
+        
+        # 创建三个用户评分
+        for i in range(3):
+            user = User.objects.create_user(
+                username=f'rater{i}',
+                password='password',
+                user_type='student'
+            )
+            UserRating.objects.create(
+                rating=self.rating,
+                user=user,
+                score=i+1
+            )
+        
+        # 现在应该有3个评分
+        self.assertEqual(self.rating.ratings_count, 3)
+    
+    def test_hot_comments(self):
+        """测试热门评论计算"""
+        # 初始应该没有热门评论
+        self.assertEqual(len(self.rating.hot_comments), 0)
+        
+        # 创建三个用户
+        users = []
+        for i in range(3):
+            user = User.objects.create_user(
+                username=f'commenter{i}',
+                password='password',
+                user_type='student'
+            )
+            users.append(user)
+        
+        # 创建三条评论
+        comments = []
+        for i in range(3):
+            comment = RatingComment.objects.create(
+                rating=self.rating,
+                author=users[i],
+                content=f"测试评论{i}",
+                is_anonymous=False
+            )
+            comments.append(comment)
+        
+        # 为第一条评论添加2个点赞，为第二条添加1个点赞
+        RatingCommentLike.objects.create(comment=comments[0], user=users[1])
+        RatingCommentLike.objects.create(comment=comments[0], user=users[2])
+        RatingCommentLike.objects.create(comment=comments[1], user=users[2])
+        
+        # 为第一条评论添加1个回复
+        RatingComment.objects.create(
+            rating=self.rating,
+            author=users[1],
+            content="回复测试",
+            parent=comments[0],
+            is_anonymous=False
+        )
+        
+        # 热门评论应该是按热度排序，第一条评论应该排在最前面
+        hot_comments = self.rating.hot_comments
+        self.assertEqual(len(hot_comments), 3)
+        self.assertEqual(hot_comments[0].id, comments[0].id)
+    
+    def test_heat_score(self):
+        """测试评分热度计算"""
+        # 创建一个特定时间的评分
+        specific_time = timezone.now() - timedelta(days=1)  # 1天前
+        rating = Rating.objects.create(
+            title="热度测试评分",
+            description="热度测试描述",
+            author=self.user,
+            is_active=True
+        )
+        
+        # 手动设置创建时间
+        rating.created_at = specific_time
+        rating.save()
+        
+        # 创建3个用户评分
+        for i in range(3):
+            user = User.objects.create_user(
+                username=f'heat_rater{i}',
+                password='password',
+                user_type='student'
+            )
+            UserRating.objects.create(rating=rating, user=user, score=4)
+        
+        # 创建2条评论
+        for i in range(2):
+            user = User.objects.create_user(
+                username=f'heat_commenter{i}',
+                password='password',
+                user_type='student'
+            )
+            RatingComment.objects.create(
+                rating=rating,
+                author=user,
+                content=f"热度测试评论{i}"
+            )
+        
+        # 计算预期热度
+        # 评分热度公式：(10 + 评分数量 + 评论数量*2) * e^(-k*days)
+        # 其中k=-0.05，days=1
+        ratings_count = 3
+        comments_count = 2
+        days = 1
+        k = -0.05
+        expected_heat = (10 + ratings_count + comments_count * 2) * math.exp(k * days)
+        
+        # 允许一定的浮点数误差
+        self.assertAlmostEqual(rating.heat_score, expected_heat, places=2)
+    
+    def test_str_representation(self):
+        """测试评分字符串表示"""
+        self.assertEqual(str(self.rating), "测试评分标题")
+
+
+class UserRatingModelTests(TestCase):
+    """测试用户评分模型的方法"""
+    
+    def setUp(self):
+        """创建测试数据"""
+        # 创建测试用户
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpassword',
+            user_type='student'
+        )
+        
+        # 创建一个评分项目
+        self.rating = Rating.objects.create(
+            title="测试评分标题",
+            description="测试评分描述",
+            author=self.user,
+            is_active=True
+        )
+        
+        # 创建一个用户评分
+        self.user_rating = UserRating.objects.create(
+            rating=self.rating,
+            user=self.user,
+            score=4
+        )
+    
+    def test_str_representation(self):
+        """测试用户评分的字符串表示"""
+        expected_str = f"testuser 对 测试评分标题 评分 4星"
+        self.assertEqual(str(self.user_rating), expected_str)
+
+
+class RatingCommentModelTests(TestCase):
+    """测试评分评论模型的方法"""
+    
+    def setUp(self):
+        """创建测试数据"""
+        # 创建测试用户
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpassword',
+            user_type='student'
+        )
+        
+        # 创建一个评分项目
+        self.rating = Rating.objects.create(
+            title="测试评分标题",
+            description="测试评分描述",
+            author=self.user,
+            is_active=True
+        )
+        
+        # 创建一条评论
+        self.comment = RatingComment.objects.create(
+            rating=self.rating,
+            author=self.user,
+            content="测试评论内容",
+            is_anonymous=False
+        )
+    
+    def test_likes_count(self):
+        """测试评论点赞数计算"""
+        # 初始应该没有点赞
+        self.assertEqual(self.comment.likes_count, 0)
+        
+        # 创建三个用户给评论点赞
+        for i in range(3):
+            user = User.objects.create_user(
+                username=f'comment_liker{i}',
+                password='password',
+                user_type='student'
+            )
+            RatingCommentLike.objects.create(comment=self.comment, user=user)
+        
+        # 现在应该有3个点赞
+        self.assertEqual(self.comment.likes_count, 3)
+    
+    def test_replies_count(self):
+        """测试评论回复数计算"""
+        # 初始应该没有回复
+        self.assertEqual(self.comment.replies_count, 0)
+        
+        # 创建三条回复
+        for i in range(3):
+            RatingComment.objects.create(
+                rating=self.rating,
+                author=self.user,
+                content=f"测试回复{i}",
+                parent=self.comment,
+                is_anonymous=False
+            )
+        
+        # 现在应该有3条回复
+        self.assertEqual(self.comment.replies_count, 3)
+    
+    def test_heat_score(self):
+        """测试评论热度计算"""
+        # 创建一个特定时间的评论
+        specific_time = timezone.now() - timedelta(days=1)  # 1天前
+        comment = RatingComment.objects.create(
+            rating=self.rating,
+            author=self.user,
+            content="热度测试评论"
+        )
+        
+        # 手动设置创建时间
+        comment.created_at = specific_time
+        comment.save()
+        
+        # 添加2个点赞
+        for i in range(2):
+            user = User.objects.create_user(
+                username=f'comment_heat_liker{i}',
+                password='password',
+                user_type='student'
+            )
+            RatingCommentLike.objects.create(comment=comment, user=user)
+        
+        # 添加1条回复
+        RatingComment.objects.create(
+            rating=self.rating,
+            author=self.user,
+            content="热度测试回复",
+            parent=comment
+        )
+        
+        # 计算预期热度
+        # 热度公式：(1 + 点赞数 + 回复数) * e^(k*days)
+        # 其中k=-0.15，days=1
+        k = -0.15
+        days = 1
+        likes = 2
+        replies = 1
+        expected_heat = (1 + likes + replies) * math.exp(k * days)
+        
+        # 允许一定的浮点数误差
+        self.assertAlmostEqual(comment.heat_score, expected_heat, places=2)
+    
+    def test_str_representation(self):
+        """测试评论字符串表示"""
+        expected_str = f"testuser 评论了 测试评分标题"
+        self.assertEqual(str(self.comment), expected_str)
+
+
+class RatingCommentLikeModelTests(TestCase):
+    """测试评分评论点赞模型的方法"""
+    
+    def setUp(self):
+        """创建测试数据"""
+        # 创建测试用户
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpassword',
+            user_type='student'
+        )
+        
+        # 创建一个评分项目
+        self.rating = Rating.objects.create(
+            title="测试评分标题",
+            description="测试评分描述",
+            author=self.user,
+            is_active=True
+        )
+        
+        # 创建一条评论
+        self.comment = RatingComment.objects.create(
+            rating=self.rating,
+            author=self.user,
+            content="测试评论内容"
+        )
+        
+        # 创建一个点赞
+        self.like = RatingCommentLike.objects.create(
+            comment=self.comment,
+            user=self.user
+        )
+    
+    def test_str_representation(self):
+        """测试评论点赞的字符串表示"""
+        expected_str = f"testuser 点赞了评分评论 {self.comment.id}"
+        self.assertEqual(str(self.like), expected_str) 

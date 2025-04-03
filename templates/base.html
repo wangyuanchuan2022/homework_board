@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="{% static 'icons/bootstrap-icons.min.css' %}">
     <link href="{% static 'css/base.css' %}" rel="stylesheet">
     <link rel="icon" type="image/png" href="{% static 'img/logo-dark.png' %}" id="favicon">
+    <!-- 添加Font Awesome图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         /* 预加载样式，在JavaScript完成背景加载前使用 */
         body.no-bg-selected {
@@ -33,6 +35,21 @@
             <a class="navbar-brand" href="{% url 'dashboard' %}">
                 <i class="bi bi-book me-2"></i> 作业板
             </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    {% if user.user_type == 'student' or user.user_type == 'admin' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'hot_topics' %}">热搜</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'ratings' %}">评分系统</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
             <div class="ms-auto">
                 <div class="dropdown">
                     <div class="user-avatar" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">

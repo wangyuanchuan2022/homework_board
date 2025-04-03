@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.core.exceptions import ValidationError
 
-from .models import User, Assignment, Subject
+from .models import User, Assignment, Subject, Rating, UserRating, RatingComment
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -247,3 +247,69 @@ class ChangePasswordForm(forms.Form):
                 self.add_error('confirm_password', '两次输入的密码不一致')
 
         return cleaned_data
+
+class RatingForm(forms.ModelForm):
+    """用于创建评分项目的表单"""
+    description = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 6, 'placeholder': '支持Markdown语法'}),
+        label='详情描述'
+    )
+    is_anonymous = forms.BooleanField(
+        required=False,
+        label='匿名发布',
+        initial=False
+    )
+    
+    class Meta:
+        model = Rating
+        fields = ['title', 'description', 'is_anonymous']
+        labels = {
+            'title': '评分标题',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            if field_name != 'is_anonymous':
+                field.widget.attrs.update({'class': 'form-control'})
+            else:
+                field.widget.attrs.update({'class': 'form-check-input'})
+
+
+class UserRatingForm(forms.ModelForm):
+    """用户提交评分的表单"""
+    score = forms.IntegerField(
+        min_value=1,
+        max_value=5,
+        widget=forms.HiddenInput(),
+        required=True
+    )
+    
+    class Meta:
+        model = UserRating
+        fields = ['score']
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class RatingCommentForm(forms.ModelForm):
+    """评分评论表单"""
+    content = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 4, 'placeholder': '写下你的评论（支持Markdown语法）...'}),
+        label='评论内容'
+    )
+    is_anonymous = forms.BooleanField(
+        required=False,
+        label='匿名评论',
+        initial=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    
+    class Meta:
+        model = RatingComment
+        fields = ['content', 'is_anonymous']
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['content'].widget.attrs.update({'class': 'form-control'})

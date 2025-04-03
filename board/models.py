@@ -247,3 +247,143 @@ class DeviceLogin(models.Model):
 
     def __str__(self):
         return f"{self.user.username} 在 {self.login_time} 通过 {self.device_name} 登录"
+
+
+class Rating(models.Model):
+    """评分模型，记录发布的评分项目"""
+    title = models.CharField(max_length=200, verbose_name="标题")
+    description = models.TextField(verbose_name="详情描述", help_text="支持Markdown语法")
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ratings', verbose_name="发布者")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+    is_active = models.BooleanField(default=True, verbose_name="是否激活")
+    is_anonymous = models.BooleanField(default=False, verbose_name="匿名发布")
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "评分项目"
+        verbose_name_plural = "评分项目"
+
+    def __str__(self):
+        return self.title
+    
+    @property
+    def average_score(self):
+        """计算平均分数"""
+        scores = self.user_ratings.filter(score__gt=0)
+        if not scores.exists():
+            return 0
+        return round(sum(score.score for score in scores) / scores.count(), 1)
+    
+    @property
+    def ratings_count(self):
+        """获取评分数量"""
+        return self.user_ratings.count()
+    
+    @property
+    def hot_comments(self):
+        """获取热门评论，按照评论热度排序"""
+        # 获取所有评论
+        comments = list(self.comments.all())
+        # 使用Python排序，按照heat_score属性降序排序
+        comments.sort(key=lambda x: x.heat_score, reverse=True)
+        # 返回前3个评论
+        return comments[:3]
+    
+    @property
+    def heat_score(self):
+        """计算评分热度分数，考虑评分数量、评论数量和时间因素
+        热度 = (10 + 评分数量 + 评论数量*2) * e^(-k*(t-t0))
+        其中t为现在时间，t0为发布时间，k为衰减因子
+        """
+        # 获取评分数量和评论数量
+        ratings_count = self.ratings_count
+        comments_count = self.comments.count()
+        
+        # 计算发布至今的天数
+        time_diff = timezone.now() - self.created_at
+        days = time_diff.days + time_diff.seconds / 86400  # 精确到秒的天数
+        
+        # 衰减因子k，可以根据需要调整
+        k = -0.05  # 负值表示随时间衰减，评分的衰减可以比热搜更慢一些
+        
+        # 计算热度
+        heat = (10 + ratings_count + comments_count * 2) * math.exp(k * days)
+        return heat
+
+
+class UserRating(models.Model):
+    """用户评分记录"""
+    rating = models.ForeignKey(Rating, on_delete=models.CASCADE, related_name='user_ratings', verbose_name="评分项目")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_ratings', verbose_name="用户")
+    score = models.PositiveSmallIntegerField(verbose_name="分数", default=0, help_text="1-5分")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="评分时间")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="更新时间")
+
+    class Meta:
+        unique_together = ['rating', 'user']
+        verbose_name = "用户评分"
+        verbose_name_plural = "用户评分"
+
+    def __str__(self):
+        return f"{self.user.username} 对 {self.rating.title} 评分 {self.score}星"
+
+
+class RatingComment(models.Model):
+    """评分评论模型"""
+    rating = models.ForeignKey(Rating, on_delete=models.CASCADE, related_name='comments', verbose_name="所属评分")
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='rating_comments', verbose_name="评论者")
+    content = models.TextField(verbose_name="评论内容", help_text="支持Markdown语法")
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies', verbose_name="引用评论")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="评论时间")
+    is_anonymous = models.BooleanField(default=False, verbose_name="是否匿名")
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "评分评论"
+        verbose_name_plural = "评分评论"
+
+    def __str__(self):
+        return f"{self.author.username} 评论了 {self.rating.title}"
+    
+    @property
+    def likes_count(self):
+        """获取评论点赞数"""
+        return self.likes.count()
+    
+    @property
+    def replies_count(self):
+        """获取回复数"""
+        return self.replies.count()
+    
+    @property
+    def heat_score(self):
+        """计算评论热度分数"""
+        # 获取点赞数和回复数
+        likes = self.likes_count
+        replies = self.replies_count
+        
+        # 计算发布至今的天数
+        time_diff = timezone.now() - self.created_at
+        days = time_diff.days + time_diff.seconds / 86400  # 精确到秒的天数
+        
+        # 衰减因子
+        k = -0.15
+        
+        # 计算热度
+        heat = (1 + likes + replies) * math.exp(k * days)
+        return heat
+
+
+class RatingCommentLike(models.Model):
+    """评分评论点赞记录"""
+    comment = models.ForeignKey(RatingComment, on_delete=models.CASCADE, related_name='likes', verbose_name="评论")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='rating_comment_likes', verbose_name="用户")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="点赞时间")
+
+    class Meta:
+        unique_together = ['comment', 'user']
+        verbose_name = "评分评论点赞"
+        verbose_name_plural = "评分评论点赞"
+
+    def __str__(self):
+        return f"{self.user.username} 点赞了评分评论 {self.comment.id}"

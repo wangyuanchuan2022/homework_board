@@ -7,22 +7,29 @@ from functools import wraps
 
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db import models
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from django.db.models import Count
+from django.db.models import Count, Q, Avg
 from django.contrib import messages
 from django.urls import reverse
 import markdown
 import ipaddress
 from user_agents import parse as user_agents_parse
+import requests
+import bleach
 
-from .forms import CustomUserCreationForm, CustomAuthenticationForm, AssignmentForm, BatchAssignmentForm, \
-    UpdateUsernameForm, ChangePasswordForm
-from .models import User, Subject, Assignment, CompletionRecord, HotTopic, HotTopicLike, Comment, CommentLike, Notification, DeviceLogin
+from .forms import (
+    CustomUserCreationForm, CustomAuthenticationForm, AssignmentForm, BatchAssignmentForm,
+    UpdateUsernameForm, ChangePasswordForm, RatingForm, UserRatingForm, RatingCommentForm
+)
+from .models import (
+    User, Subject, Assignment, CompletionRecord, HotTopic, HotTopicLike, Comment, 
+    CommentLike, Notification, DeviceLogin, Rating, UserRating, RatingComment, RatingCommentLike
+)
 
 
 def user_type_required(user_types):
@@ -1591,9 +1598,47 @@ def create_comment(request):
         parent_id = request.POST.get('parent_id')  # 可能为空，表示这是顶级评论
         content = request.POST.get('content', '').strip()
         is_anonymous = request.POST.get('is_anonymous') == 'true'
-
+        
+        # 增强输入验证
         if not content:
             return JsonResponse({'success': False, 'message': '评论内容不能为空'})
+        
+        # 限制评论长度
+        MAX_COMMENT_LENGTH = 5000
+        if len(content) > MAX_COMMENT_LENGTH:
+            return JsonResponse({'success': False, 'message': f'评论内容过长，最多允许{MAX_COMMENT_LENGTH}个字符'})
+        
+        # 基本XSS检测
+        xss_patterns = [
+            r'<script', r'javascript:', r'on\w+\s*=', r'vbscript:', r'data:',
+            r'<iframe', r'<object', r'<embed'
+        ]
+        for pattern in xss_patterns:
+            if re.search(pattern, content, re.IGNORECASE):
+                return JsonResponse({'success': False, 'message': '评论内容包含不允许的HTML标签或属性'})
+        
+        # 使用bleach净化输入内容
+        try:
+            import bleach
+            allowed_tags = []  # 不允许任何HTML标签
+            content = bleach.clean(content, tags=allowed_tags, strip=True)
+        except ImportError:
+            # 如果bleach不可用，使用Django自带的escape功能
+            from django.utils.html import escape
+            content = escape(content)
+
+        # 验证topic_id是否为有效整数
+        try:
+            topic_id = int(topic_id)
+        except (ValueError, TypeError):
+            return JsonResponse({'success': False, 'message': '无效的话题ID'})
+            
+        # 验证parent_id是否为有效整数（如果提供）
+        if parent_id:
+            try:
+                parent_id = int(parent_id)
+            except (ValueError, TypeError):
+                return JsonResponse({'success': False, 'message': '无效的父评论ID'})
 
         try:
             topic = HotTopic.objects.get(id=topic_id)
@@ -1603,6 +1648,9 @@ def create_comment(request):
             if parent_id:
                 try:
                     parent = Comment.objects.get(id=parent_id)
+                    # 验证父评论是否属于同一话题
+                    if parent.topic.id != topic.id:
+                        return JsonResponse({'success': False, 'message': '回复的评论不属于当前话题'})
                 except Comment.DoesNotExist:
                     return JsonResponse({'success': False, 'message': '回复的评论不存在'})
 
@@ -1618,9 +1666,13 @@ def create_comment(request):
             # 获取发送者名称
             sender_name = "匿名用户" if is_anonymous else request.user.username
             
+            # 净化通知内容
+            safe_content = content[:100] + ('...' if len(content) > 100 else '')
+            safe_title = topic.title
+            
             # 如果是回复评论，创建回复通知（排除回复自己，但包括匿名评论）
             if parent and parent.author != request.user:
-                notification_content = f"{sender_name} 回复了你的评论: {content[:100]}" + ('...' if len(content) > 100 else '')
+                notification_content = f"{sender_name} 回复了你的评论: {safe_content}"
                 
                 Notification.objects.create(
                     recipient=parent.author,
@@ -1632,7 +1684,7 @@ def create_comment(request):
                 )
             # 如果是评论热搜，可以给热搜作者发通知
             elif not parent and topic.author != request.user:
-                notification_content = f"{sender_name} 评论了你的热搜《{topic.title}》: {content[:50]}" + ('...' if len(content) > 50 else '')
+                notification_content = f"{sender_name} 评论了你的热搜《{safe_title}》: {safe_content[:50]}" + ('...' if len(safe_content) > 50 else '')
                 
                 Notification.objects.create(
                     recipient=topic.author,
@@ -1646,6 +1698,10 @@ def create_comment(request):
             return JsonResponse({'success': True})
         except HotTopic.DoesNotExist:
             return JsonResponse({'success': False, 'message': '热搜不存在'})
+        except Exception as e:
+            # 记录错误，但不向用户展示详细错误信息
+            print(f"创建评论错误: {str(e)}")
+            return JsonResponse({'success': False, 'message': '创建评论失败，请稍后再试'})
 
     return JsonResponse({'success': False, 'message': '请求方法错误'})
 
@@ -1848,7 +1904,7 @@ def get_replies(request):
 
 
 @user_type_required(['student', 'admin'])
-def delete_comment(request):
+def delete_hot_topic_comment(request):
     """删除评论或回复"""
     if request.method == 'POST':
         comment_id = request.POST.get('comment_id')
@@ -1871,7 +1927,7 @@ def delete_comment(request):
 
 
 def convert_markdown_to_html(text):
-    """将Markdown文本转换为HTML，包括数学公式支持"""
+    """将Markdown文本转换为HTML，包括数学公式支持和HTML净化"""
     if not text:
         return ""
     
@@ -1881,6 +1937,39 @@ def convert_markdown_to_html(text):
         text = text[:MAX_TEXT_LENGTH] + "\n\n**内容过长，已截断显示**"
         
     try:
+        # 定义允许的HTML标签和属性
+        allowed_tags = [
+            'a', 'abbr', 'acronym', 'b', 'blockquote', 'br', 'code', 'div', 'em', 
+            'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'i', 'img', 'li', 'ol', 'p', 
+            'pre', 'span', 'strong', 'table', 'tbody', 'td', 'th', 'thead', 'tr', 'ul'
+        ]
+        
+        allowed_attrs = {
+            'a': ['href', 'title', 'class', 'rel'],
+            'abbr': ['title'],
+            'acronym': ['title'],
+            'div': ['class', 'id', 'style'],
+            'h1': ['id', 'class'],
+            'h2': ['id', 'class'],
+            'h3': ['id', 'class'],
+            'h4': ['id', 'class'],
+            'h5': ['id', 'class'],
+            'h6': ['id', 'class'],
+            'img': ['src', 'alt', 'title', 'class', 'align'],
+            'li': ['class'],
+            'ol': ['class'],
+            'p': ['class'],
+            'pre': ['class'],
+            'span': ['class', 'style'],
+            'table': ['class', 'border'],
+            'td': ['class', 'colspan', 'rowspan'],
+            'th': ['class', 'colspan', 'rowspan', 'scope'],
+            'ul': ['class']
+        }
+        
+        # 定义安全的URL协议
+        allowed_protocols = ['http', 'https', 'mailto', 'tel']
+        
         # 使用markdown库转换基本markdown语法
         md = markdown.Markdown(extensions=[
             'markdown.extensions.extra',
@@ -1950,7 +2039,16 @@ def convert_markdown_to_html(text):
             flags=re.S
         )
         
-        return html
+        # 使用bleach库净化HTML内容
+        cleaned_html = bleach.clean(
+            html,
+            tags=allowed_tags,
+            attributes=allowed_attrs,
+            protocols=allowed_protocols,
+            strip=True
+        )
+        
+        return cleaned_html
     except MemoryError:
         # 捕获内存错误，返回简化版本
         return f"<p>内容过于复杂，无法渲染。原文：</p><pre>{text[:200]}...</pre>"
@@ -1961,27 +2059,43 @@ def convert_markdown_to_html(text):
 
 @login_required
 def user_notifications(request):
-    """用户的消息中心，显示各类通知"""
-    if request.user.user_type not in ['student', 'admin']:
-        return redirect('dashboard')
+    """用户通知页面"""
+    # 获取用户的所有通知
+    notifications = Notification.objects.filter(recipient=request.user)
     
-    # 获取通知数据
-    likes = Notification.objects.filter(recipient=request.user, type='like')
-    replies = Notification.objects.filter(recipient=request.user, type='reply')
-    system = Notification.objects.filter(recipient=request.user, type='system')
+    # 按类型分类通知
+    likes = notifications.filter(type='like').order_by('-created_at')
+    replies = notifications.filter(type='reply').order_by('-created_at')
+    system = notifications.filter(type='system').order_by('-created_at')
     
-    # 设备登录记录
-    device_logins = DeviceLogin.objects.filter(user=request.user).order_by('-login_time')[:10]
+    # 分页处理
+    paginator_likes = Paginator(likes, 10)
+    paginator_replies = Paginator(replies, 10)
+    paginator_system = Paginator(system, 10)
     
-    # 标记所有通知为已读（可选，也可以在用户查看特定类型通知时才标记）
-    # Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+    page = request.GET.get('page', 1)
     
-    return render(request, 'notifications.html', {
-        'likes': likes,
-        'replies': replies,
-        'system': system,
-        'device_logins': device_logins,
-    })
+    try:
+        likes_page = paginator_likes.page(page)
+        replies_page = paginator_replies.page(page)
+        system_page = paginator_system.page(page)
+    except PageNotAnInteger:
+        likes_page = paginator_likes.page(1)
+        replies_page = paginator_replies.page(1)
+        system_page = paginator_system.page(1)
+    except EmptyPage:
+        likes_page = paginator_likes.page(paginator_likes.num_pages)
+        replies_page = paginator_replies.page(paginator_replies.num_pages)
+        system_page = paginator_system.page(paginator_system.num_pages)
+    
+    context = {
+        'likes': likes_page,
+        'replies': replies_page,
+        'system': system_page,
+        'unread_count': notifications.filter(is_read=False).count()
+    }
+    
+    return render(request, 'notifications.html', context)
 
 
 @login_required
@@ -2066,20 +2180,25 @@ def record_device_login(request, user):
             device_name = "未识别设备"
             device_type = "未知类型"
         
+        # 获取位置信息
+        location = get_location_from_ip(ip)
+        print(f"IP地址 {ip} 的位置: {location}")
+        
         # 创建设备登录记录
-        print(f"准备创建设备登录记录: 用户={user.username}, 设备={device_name}, IP={ip}")
+        print(f"准备创建设备登录记录: 用户={user.username}, 设备={device_name}, IP={ip}, 位置={location}")
         
         device_login = DeviceLogin.objects.create(
             user=user,
             device_name=device_name,
             ip_address=ip,
             user_agent=user_agent_string[:500] if user_agent_string else "无设备信息",  # 限制长度
-            location="未知位置"  # 可以接入IP地理位置API进行位置解析
+            location=location
         )
         
         # 创建系统通知
         login_time = device_login.login_time.strftime('%Y-%m-%d %H:%M:%S')
-        notification_content = f"您的账号于 {login_time} 通过 {device_type}（{device_name}）登录。IP地址: {ip}"
+        location_info = f"，位置: {location}" if location and location != "未知位置" else ""
+        notification_content = f"您的账号于 {login_time} 通过 {device_type}（{device_name}）登录。IP地址: {ip}{location_info}"
         
         Notification.objects.create(
             recipient=user,
@@ -2087,7 +2206,7 @@ def record_device_login(request, user):
             content=notification_content
         )
         
-        print(f"设备登录记录和通知创建成功: {device_name}, {ip}")
+        print(f"设备登录记录和通知创建成功: {device_name}, {ip}, {location}")
         return True
     
     except Exception as e:
@@ -2103,6 +2222,16 @@ def test_device_detection(request):
     """测试设备检测功能"""
     user = request.user
     
+    # 获取IP地址用于显示
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR', '127.0.0.1')
+    
+    # 获取位置信息用于显示
+    location = get_location_from_ip(ip)
+    
     # 尝试直接记录设备信息
     result = record_device_login(request, user)
     
@@ -2114,6 +2243,8 @@ def test_device_detection(request):
         },
         "User_Agent": request.META.get('HTTP_USER_AGENT', '无'),
         "设备记录结果": "成功" if result else "失败",
+        "当前IP": ip,
+        "当前位置": location,
         "最近设备记录": []
     }
     
@@ -2123,7 +2254,366 @@ def test_device_detection(request):
         debug_info["最近设备记录"].append({
             "设备名称": login.device_name,
             "IP地址": login.ip_address,
+            "位置信息": login.location,
             "登录时间": login.login_time.strftime('%Y-%m-%d %H:%M:%S'),
         })
     
     return render(request, 'debug_device.html', {'debug_info': debug_info})
+
+
+def get_location_from_ip(ip):
+    """
+    通过IP地址获取地理位置信息
+    使用免费的IP-API服务
+    """
+    if not ip or ip == '127.0.0.1' or ip.startswith('192.168.') or ip.startswith('10.'):
+        return "本地网络"
+    
+    try:
+        # 使用IP-API的免费服务，不需要API密钥
+        response = requests.get(f'http://ip-api.com/json/{ip}?lang=zh-CN', timeout=5)
+        data = response.json()
+        
+        if data['status'] == 'success':
+            # 返回城市和国家/地区
+            city = data.get('city', '')
+            country = data.get('country', '')
+            region = data.get('regionName', '')
+            
+            location_parts = []
+            if country:
+                location_parts.append(country)
+            if region and region != city:  # 避免重复显示相同的城市和地区名
+                location_parts.append(region)
+            if city:
+                location_parts.append(city)
+                
+            location = ' '.join(location_parts)
+            return location or "未知位置"
+        else:
+            print(f"IP位置查询失败: {data.get('message', '未知错误')}")
+            return "未知位置"
+    except Exception as e:
+        print(f"IP位置查询异常: {str(e)}")
+        return "未知位置"
+
+
+@user_type_required(['student', 'admin'])
+def ratings_list(request):
+    """评分系统列表页面"""
+    # 获取所有激活状态的评分
+    ratings = Rating.objects.filter(is_active=True)
+    
+    # 获取搜索关键词
+    query = request.GET.get('q', '')
+    if query:
+        ratings = ratings.filter(title__icontains=query)
+    
+    # 获取排序方式
+    sort_by = request.GET.get('sort_by', 'newest')
+    
+    # 根据排序方式进行排序
+    if sort_by == 'newest':
+        ratings = ratings.order_by('-created_at')
+    elif sort_by == 'rating':
+        # 按平均评分排序，需要用到自定义的 average_score 方法
+        ratings = sorted(ratings, key=lambda x: x.average_score, reverse=True)
+    elif sort_by == 'popular':
+        # 按评价人数排序
+        ratings = sorted(ratings, key=lambda x: x.ratings_count, reverse=True)
+    elif sort_by == 'hot':
+        # 按热度排序
+        ratings = sorted(ratings, key=lambda x: x.heat_score, reverse=True)
+    
+    # 分页处理
+    paginator = Paginator(ratings, 9)  # 每页显示9条评分
+    page = request.GET.get('page')
+    try:
+        ratings = paginator.page(page)
+    except PageNotAnInteger:
+        ratings = paginator.page(1)
+    except EmptyPage:
+        ratings = paginator.page(paginator.num_pages)
+    
+    context = {
+        'ratings': ratings,
+        'query': query,
+        'sort_by': sort_by
+    }
+    
+    return render(request, 'ratings.html', context)
+
+
+@user_type_required(['student', 'admin'])
+def rating_detail(request, rating_id):
+    """评分详情页面"""
+    rating = get_object_or_404(Rating, id=rating_id, is_active=True)
+    
+    # 获取当前用户的评分记录
+    user_rating = None
+    if request.user.is_authenticated:
+        user_rating = UserRating.objects.filter(rating=rating, user=request.user).first()
+    
+    # 获取该评分项目的所有评论，按热度排序
+    comments = RatingComment.objects.filter(rating=rating, parent=None).order_by('-created_at')
+    
+    # 为每条评论转换Markdown格式
+    for comment in comments:
+        comment.html_content = convert_markdown_to_html(comment.content)
+        # 处理评论的回复
+        for reply in comment.replies.all():
+            reply.html_content = convert_markdown_to_html(reply.content)
+    
+    # 转换评分详情的Markdown
+    rating.html_description = convert_markdown_to_html(rating.description)
+    
+    # 分页
+    paginator = Paginator(comments, 10)  # 每页10条评论
+    page = request.GET.get('page')
+    
+    try:
+        comments = paginator.page(page)
+    except PageNotAnInteger:
+        comments = paginator.page(1)
+    except EmptyPage:
+        comments = paginator.page(paginator.num_pages)
+    
+    # 计算评分分布
+    score_distribution = []
+    total_ratings = rating.user_ratings.count()
+    
+    if total_ratings > 0:
+        for score in range(1, 6):
+            count = rating.user_ratings.filter(score=score).count()
+            percentage = round((count / total_ratings) * 100) if total_ratings > 0 else 0
+            score_distribution.append({
+                'score': score,
+                'count': count,
+                'percentage': percentage
+            })
+    else:
+        for score in range(1, 6):
+            score_distribution.append({
+                'score': score,
+                'count': 0,
+                'percentage': 0
+            })
+    
+    # 获取最近的用户评分
+    recent_ratings = UserRating.objects.filter(rating=rating).order_by('-created_at')[:5]
+    
+    context = {
+        'rating': rating,
+        'user_rating': user_rating,
+        'user_rating_form': UserRatingForm(instance=user_rating),
+        'comment_form': RatingCommentForm(),
+        'comments': comments,
+        'score_distribution': score_distribution,
+        'recent_ratings': recent_ratings,
+    }
+    
+    return render(request, 'rating_detail.html', context)
+
+
+@user_type_required(['student', 'admin'])
+def create_rating(request):
+    """创建评分项目"""
+    if request.method == 'POST':
+        form = RatingForm(request.POST)
+        if form.is_valid():
+            rating = form.save(commit=False)
+            rating.author = request.user
+            # 保存匿名设置
+            rating.is_anonymous = form.cleaned_data.get('is_anonymous', False)
+            rating.save()
+            
+            messages.success(request, '评分项目创建成功！')
+            return redirect('rating_detail', rating_id=rating.id)
+    else:
+        form = RatingForm()
+    
+    context = {
+        'form': form,
+    }
+    
+    return render(request, 'create_rating.html', context)
+
+
+@user_type_required(['student', 'admin'])
+def rate_rating(request, rating_id):
+    """为评分项目评分"""
+    rating = get_object_or_404(Rating, id=rating_id, is_active=True)
+    
+    if request.method == 'POST':
+        # 获取或创建用户评分记录
+        user_rating, created = UserRating.objects.get_or_create(
+            rating=rating,
+            user=request.user,
+            defaults={'score': 0}
+        )
+        
+        # 获取用户提交的评分
+        form = UserRatingForm(request.POST, instance=user_rating)
+        if form.is_valid():
+            user_rating = form.save()
+            
+            if created or user_rating.score > 0:  # 确保只在新评分或修改评分时发通知
+                # 发送通知给评分作者（如果评分者不是作者自己）
+                if rating.author != request.user:
+                    notification_content = f"{request.user.username} 给你的评分 {rating.title} 打了 {user_rating.score} 星"
+                    
+                    Notification.objects.create(
+                        recipient=rating.author,
+                        sender=request.user,
+                        type='reply',  # 使用reply类型表示评分
+                        content=notification_content
+                    )
+            
+            messages.success(request, '评分成功！')
+        else:
+            messages.error(request, '评分失败，请确保评分为1-5之间的整数！')
+    
+    return redirect('rating_detail', rating_id=rating.id)
+
+
+@user_type_required(['student', 'admin'])
+def comment_rating(request, rating_id):
+    """评论评分"""
+    rating = get_object_or_404(Rating, id=rating_id, is_active=True)
+    
+    if request.method == 'POST':
+        form = RatingCommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.rating = rating
+            comment.author = request.user
+            comment.save()
+            
+            # 发送通知给评分作者（如果评论者不是作者自己）
+            if rating.author != request.user:
+                sender_name = "匿名用户" if comment.is_anonymous else request.user.username
+                notification_content = f"{sender_name} 评论了你的评分 {rating.title}：\"{comment.content[:50]}\""
+                
+                Notification.objects.create(
+                    recipient=rating.author,
+                    sender=request.user,
+                    type='reply',  # 使用reply类型表示评论
+                    content=notification_content
+                )
+            
+            messages.success(request, '评论发表成功！')
+            return redirect('rating_detail', rating_id=rating.id)
+        else:
+            messages.error(request, '评论发表失败，请重试！')
+    
+    return redirect('rating_detail', rating_id=rating.id)
+
+
+@user_type_required(['student', 'admin'])
+def reply_comment(request, comment_id):
+    """回复评论"""
+    parent_comment = get_object_or_404(RatingComment, id=comment_id)
+    rating = parent_comment.rating
+    
+    if request.method == 'POST':
+        content = request.POST.get('content', '').strip()
+        is_anonymous = request.POST.get('is_anonymous') == 'on'
+        
+        if content:
+            comment = RatingComment(
+                rating=rating,
+                author=request.user,
+                content=content,
+                parent=parent_comment,
+                is_anonymous=is_anonymous
+            )
+            comment.save()
+            
+            # 创建通知，通知原评论作者有人回复了评论
+            if parent_comment.author != request.user:
+                sender_name = "匿名用户" if is_anonymous else request.user.username
+                notification_content = f"{sender_name} 回复了你的评论：\"{content[:50]}...\""
+                
+                Notification.objects.create(
+                    recipient=parent_comment.author,
+                    sender=request.user,
+                    type='reply',
+                    content=notification_content
+                )
+            
+            messages.success(request, '回复发表成功！')
+    
+    return redirect('rating_detail', rating_id=rating.id)
+
+
+@user_type_required(['student', 'admin'])
+def like_comment(request, comment_id):
+    """点赞/取消点赞评论"""
+    if request.method == 'POST':
+        comment = get_object_or_404(RatingComment, id=comment_id)
+        
+        # 查找是否已经点赞
+        like, created = RatingCommentLike.objects.get_or_create(
+            comment=comment,
+            user=request.user
+        )
+        
+        # 如果已经点赞，则取消点赞
+        if not created:
+            like.delete()
+            liked = False
+        else:
+            liked = True
+            
+            # 创建通知（如果不是给自己点赞）
+            if comment.author != request.user:
+                sender_name = "匿名用户" if comment.is_anonymous else request.user.username
+                notification_content = f"{sender_name} 点赞了你的评论：\"{comment.content[:50]}...\""
+                
+                Notification.objects.create(
+                    recipient=comment.author,
+                    sender=request.user,
+                    type='like',
+                    content=notification_content
+                )
+        
+        return JsonResponse({
+            'success': True,
+            'liked': liked,
+            'likes_count': comment.likes_count
+        })
+    
+    return JsonResponse({'success': False, 'error': '请求方法不允许'})
+
+
+@user_type_required(['student', 'admin'])
+def delete_comment(request, comment_id):
+    """删除评论"""
+    if request.method == 'POST':
+        comment = get_object_or_404(RatingComment, id=comment_id)
+        
+        # 只有评论作者或管理员可以删除评论
+        if request.user == comment.author or request.user.user_type == 'admin':
+            comment.delete()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'error': '您没有权限删除此评论'})
+    
+    return JsonResponse({'success': False, 'error': '请求方法不允许'})
+
+
+@user_type_required(['student', 'admin'])
+def delete_rating(request, rating_id):
+    """删除评分项目"""
+    rating = get_object_or_404(Rating, id=rating_id)
+    
+    # 检查权限：只有评分作者或管理员可以删除
+    if request.user == rating.author or request.user.user_type == 'admin':
+        # 标记为不活跃而不是直接删除，保留历史数据
+        rating.is_active = False
+        rating.save()
+        messages.success(request, '评分项目已删除')
+        return redirect('ratings')
+    else:
+        messages.error(request, '您没有权限删除此评分项目')
+        return redirect('rating_detail', rating_id=rating.id)
