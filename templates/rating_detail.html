@@ -472,22 +472,6 @@
         font-size: 0.9rem;
     }
     
-    /* 热门评论样式 */
-    .hot-comment {
-        transition: all 0.3s;
-        position: relative;
-    }
-    
-    .hot-comment::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -10px;
-        width: 3px;
-        height: 100%;
-        background: linear-gradient(to bottom, #ff6b6b, transparent);
-    }
-    
     /* 响应式调整 */
     @media (max-width: 991.98px) {
         .rating-stats {
@@ -685,7 +669,7 @@
                                                 </div>
                                             </div>
                                             <div class="comment-content">
-                                                {{ reply.html_content|safe }}
+                                                {{ reply.content|linebreaksbr }}
                                             </div>
                                             <div class="comment-actions">
                                                 <button class="like-comment-btn" data-comment-id="{{ reply.id }}">
@@ -1004,11 +988,7 @@
             comment.dataset.likes = likes;
             comment.dataset.heat = heat;
             
-            // 为热门评论添加视觉标识
-            if (heat > 3) {
-                comment.classList.add('hot-comment');
-                comment.style.backgroundColor = `rgba(255, 107, 107, ${Math.min(heat / 20, 0.15)})`; 
-            }
+            // 不再为热门评论添加视觉标识
         });
         
         // 排序功能

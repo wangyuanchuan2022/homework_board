@@ -1082,12 +1082,12 @@ def strip_markdown(text):
     
     # 去除行内代码和代码块
     text = re.sub(r"`{1,3}(.*?)`{1,3}", r"\1", text, flags=re.S)
+
+    # 去除图片标记，用[图片]替代
+    text = re.sub(r"!\[.*?\]\(.*?\)", "[图片]", text)
     
     # 去除链接，保留链接文本
     text = re.sub(r"\[(.*?)\]\(.*?\)", r"\1", text)
-    
-    # 去除图片标记，用[图片]替代
-    text = re.sub(r"!\[.*?\]\(.*?\)", "[图片]", text)
     
     # 去除引用标记
     text = re.sub(r"^>\s+", "", text, flags=re.M)
@@ -2360,10 +2360,7 @@ def rating_detail(request, rating_id):
     # 为每条评论转换Markdown格式
     for comment in comments:
         comment.html_content = convert_markdown_to_html(comment.content)
-        # 处理评论的回复
-        for reply in comment.replies.all():
-            reply.html_content = convert_markdown_to_html(reply.content)
-    
+
     # 转换评分详情的Markdown
     rating.html_description = convert_markdown_to_html(rating.description)
     
@@ -2617,3 +2614,45 @@ def delete_rating(request, rating_id):
     else:
         messages.error(request, '您没有权限删除此评分项目')
         return redirect('rating_detail', rating_id=rating.id)
+
+
+@login_required
+def get_notifications_ajax(request):
+    """AJAX获取通知数据"""
+    notification_type = request.GET.get('type', 'like')
+    page = request.GET.get('page', 1)
+    
+    # 获取用户的通知
+    notifications = Notification.objects.filter(recipient=request.user, type=notification_type).order_by('-created_at')
+    
+    # 分页处理
+    paginator = Paginator(notifications, 10)  # 每页10条
+    
+    try:
+        notifications_page = paginator.page(page)
+    except PageNotAnInteger:
+        notifications_page = paginator.page(1)
+    except EmptyPage:
+        notifications_page = paginator.page(paginator.num_pages)
+    
+    # 准备返回的数据
+    notifications_data = []
+    for notification in notifications_page:
+        notification_data = {
+            'id': notification.id,
+            'content': notification.content,
+            'is_read': notification.is_read,
+            'created_at': notification.created_at.strftime('%Y-%m-%d %H:%M'),
+            'sender_username': notification.sender.username if notification.sender else '系统',
+            'comment_id': notification.comment.id if notification.comment else None,
+            'topic_id': notification.topic.id if notification.topic else None,
+        }
+        notifications_data.append(notification_data)
+    
+    return JsonResponse({
+        'notifications': notifications_data,
+        'has_next': notifications_page.has_next(),
+        'has_previous': notifications_page.has_previous(),
+        'current_page': notifications_page.number,
+        'total_pages': paginator.num_pages,
+    })

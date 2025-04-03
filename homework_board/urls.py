@@ -59,6 +59,7 @@ urlpatterns = [
     path("api/notifications/mark-read/", views.mark_notifications_read, name="mark_notifications_read"),
     path("api/notifications/mark-read/<str:notification_type>/", views.mark_notifications_read, name="mark_notifications_read_by_type"),
     path("api/notifications/unread-count/", views.unread_notifications_count, name="unread_notifications_count"),
+    path("api/notifications/get/", views.get_notifications_ajax, name="get_notifications_ajax"),
 
     path("api/toggle-assignment/", views.toggle_assignment_completion, name="toggle_assignment"),
     path("api/create-admin/", views.create_admin_user, name="create_admin"),

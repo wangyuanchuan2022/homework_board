@@ -136,7 +136,7 @@
             <div class="notification-section" id="like-notifications" style="display: block;">
                 <h3><i class="bi bi-heart me-2"></i>我的点赞</h3>
                 {% if likes %}
-                    <div class="notification-list">
+                    <div class="notification-list" id="like-notification-list">
                         {% for notification in likes %}
                             <div class="notification-item{% if not notification.is_read %} notification-unread{% endif %}" data-id="{{ notification.id }}">
                                 <div class="d-flex justify-content-between align-items-start">
@@ -158,6 +158,13 @@
                             </div>
                         {% endfor %}
                     </div>
+                    {% if likes.has_next %}
+                    <div class="text-center mt-3 load-more-container">
+                        <button class="btn btn-outline-primary btn-sm load-more-btn" data-type="like" data-page="{{ likes.next_page_number }}">
+                            <i class="bi bi-arrow-down-circle me-1"></i>加载更多
+                        </button>
+                    </div>
+                    {% endif %}
                 {% else %}
                     <div class="no-notifications">
                         <i class="bi bi-inbox"></i>
@@ -170,7 +177,7 @@
             <div class="notification-section" id="reply-notifications" style="display: none;">
                 <h3><i class="bi bi-chat-dots me-2"></i>我的回复</h3>
                 {% if replies %}
-                    <div class="notification-list">
+                    <div class="notification-list" id="reply-notification-list">
                         {% for notification in replies %}
                             <div class="notification-item{% if not notification.is_read %} notification-unread{% endif %}" data-id="{{ notification.id }}">
                                 <div class="d-flex justify-content-between align-items-start">
@@ -182,6 +189,13 @@
                             </div>
                         {% endfor %}
                     </div>
+                    {% if replies.has_next %}
+                    <div class="text-center mt-3 load-more-container">
+                        <button class="btn btn-outline-primary btn-sm load-more-btn" data-type="reply" data-page="{{ replies.next_page_number }}">
+                            <i class="bi bi-arrow-down-circle me-1"></i>加载更多
+                        </button>
+                    </div>
+                    {% endif %}
                 {% else %}
                     <div class="no-notifications">
                         <i class="bi bi-inbox"></i>
@@ -194,7 +208,7 @@
             <div class="notification-section" id="system-notifications" style="display: none;">
                 <h3><i class="bi bi-bell me-2"></i>系统消息</h3>
                 {% if system %}
-                    <div class="notification-list">
+                    <div class="notification-list" id="system-notification-list">
                         {% for notification in system %}
                             <div class="notification-item{% if not notification.is_read %} notification-unread{% endif %}" data-id="{{ notification.id }}">
                                 <div class="d-flex justify-content-between align-items-start">
@@ -207,6 +221,13 @@
                             </div>
                         {% endfor %}
                     </div>
+                    {% if system.has_next %}
+                    <div class="text-center mt-3 load-more-container">
+                        <button class="btn btn-outline-primary btn-sm load-more-btn" data-type="system" data-page="{{ system.next_page_number }}">
+                            <i class="bi bi-arrow-down-circle me-1"></i>加载更多
+                        </button>
+                    </div>
+                    {% endif %}
                 {% else %}
                     <div class="no-notifications">
                         <i class="bi bi-bell-slash"></i>
@@ -255,6 +276,93 @@
                 } else if (target === 'system-notifications') {
                     markAsRead('system');
                 }
+            });
+        });
+        
+        // 处理加载更多按钮点击事件
+        const loadMoreButtons = document.querySelectorAll('.load-more-btn');
+        loadMoreButtons.forEach(function(button) {
+            button.addEventListener('click', function() {
+                const type = this.getAttribute('data-type');
+                const page = this.getAttribute('data-page');
+                const button = this;
+                
+                // 显示加载状态
+                button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 加载中...';
+                button.disabled = true;
+                
+                // 发送AJAX请求获取更多通知
+                fetch(`/api/notifications/get/?type=${type}&page=${page}`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // 找到对应的通知列表容器
+                    const listContainer = document.getElementById(`${type}-notification-list`);
+                    
+                    // 添加新的通知项
+                    data.notifications.forEach(function(notification) {
+                        const notificationItem = document.createElement('div');
+                        notificationItem.className = `notification-item${notification.is_read ? '' : ' notification-unread'}`;
+                        notificationItem.setAttribute('data-id', notification.id);
+                        
+                        let content = `
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>`;
+                                
+                        if (type === 'like') {
+                            content += `<strong>${notification.sender_username}</strong> `;
+                            if (notification.comment_id) {
+                                content += '点赞了你的评论';
+                            } else if (notification.topic_id) {
+                                content += '点赞了你的热搜';
+                            } else {
+                                content += '点赞了你的内容';
+                            }
+                        } else if (type === 'system') {
+                            content += `<strong>系统通知</strong>`;
+                        }
+                        
+                        content += `
+                                    <p class="mb-1">
+                                        "${notification.content.length > 100 ? notification.content.substring(0, 100) + '...' : notification.content}"
+                                    </p>
+                                </div>
+                                <small class="notification-time">${notification.created_at}</small>
+                            </div>
+                        `;
+                        
+                        notificationItem.innerHTML = content;
+                        
+                        // 添加点击事件监听器，标记为已读
+                        notificationItem.addEventListener('click', function() {
+                            this.classList.remove('notification-unread');
+                        });
+                        
+                        listContainer.appendChild(notificationItem);
+                    });
+                    
+                    // 更新按钮状态或移除按钮
+                    if (data.has_next) {
+                        button.innerHTML = '<i class="bi bi-arrow-down-circle me-1"></i>加载更多';
+                        button.disabled = false;
+                        button.setAttribute('data-page', data.current_page + 1);
+                    } else {
+                        const buttonContainer = button.parentElement;
+                        buttonContainer.parentElement.removeChild(buttonContainer);
+                    }
+                    
+                    // 更新未读消息数量
+                    updateUnreadCount();
+                })
+                .catch(error => {
+                    console.error('获取通知失败:', error);
+                    button.innerHTML = '<i class="bi bi-arrow-down-circle me-1"></i>加载更多';
+                    button.disabled = false;
+                });
             });
         });
         

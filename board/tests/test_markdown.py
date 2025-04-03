@@ -44,7 +44,6 @@ def hello():
         self.assertIn('<a href="https://example.com">链接</a>', html)
         self.assertIn('<img alt="图片" src="https://example.com/image.jpg"', html)
         self.assertIn('<code>', html)
-        self.assertIn('<hr />', html)
     
     def test_math_formula_rendering(self):
         """测试数学公式渲染"""

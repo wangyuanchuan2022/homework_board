@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Django's command-line utility for administrative tasks."""
 # ./find_recent_changes.py 4h --include-dirs -s name
+# coverage run --source='.' manage.py test board.tests
 import os
 import sys
 
