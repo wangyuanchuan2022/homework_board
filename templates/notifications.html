@@ -127,16 +127,13 @@
                     <span><i class="bi bi-bell me-2"></i> 系统消息</span>
                     <span class="notification-badge system-count">0</span>
                 </li>
-                <li class="notification-nav-item" data-target="device-logins">
-                    <span><i class="bi bi-device-ssd me-2"></i> 登录设备</span>
-                </li>
             </ul>
         </div>
         
         <!-- 右侧内容区 -->
         <div class="notification-content">
             <!-- 点赞通知 -->
-            <div class="notification-section" id="like-notifications">
+            <div class="notification-section" id="like-notifications" style="display: block;">
                 <h3><i class="bi bi-heart me-2"></i>我的点赞</h3>
                 {% if likes %}
                     <div class="notification-list">
@@ -170,7 +167,7 @@
             </div>
             
             <!-- 回复通知 -->
-            <div class="notification-section" id="reply-notifications">
+            <div class="notification-section" id="reply-notifications" style="display: none;">
                 <h3><i class="bi bi-chat-dots me-2"></i>我的回复</h3>
                 {% if replies %}
                     <div class="notification-list">
@@ -179,9 +176,6 @@
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div>
                                         <p class="mb-1">{{ notification.content }}</p>
-                                        <a href="{% if notification.topic %}{% url 'hot_topic_detail' notification.topic.id %}{% endif %}" class="notification-link">
-                                            查看详情
-                                        </a>
                                     </div>
                                     <small class="notification-time">{{ notification.created_at|date:"Y-m-d H:i" }}</small>
                                 </div>
@@ -220,32 +214,6 @@
                     </div>
                 {% endif %}
             </div>
-            
-            <!-- 登录设备 -->
-            <div class="notification-section" id="device-logins" style="display: none;">
-                <h3><i class="bi bi-device-ssd me-2"></i>登录设备</h3>
-                {% if device_logins %}
-                    <div class="notification-list">
-                        {% for device in device_logins %}
-                            <div class="device-login-item">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <h5 class="mb-1">{{ device.device_name }}</h5>
-                                        <p class="mb-0">IP地址: {{ device.ip_address }}</p>
-                                        <p class="mb-0">位置: {{ device.location|default:"未知位置" }}</p>
-                                    </div>
-                                    <small class="notification-time">{{ device.login_time|date:"Y-m-d H:i" }}</small>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="no-notifications">
-                        <i class="bi bi-device-hdd"></i>
-                        <p>无设备登录记录</p>
-                    </div>
-                {% endif %}
-            </div>
         </div>
     </div>
 </div>
@@ -254,6 +222,9 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // 页面加载时自动将点赞消息标记为已读
+        markAsRead('like');
+        
         // 更新未读消息数量
         updateUnreadCount();
         
