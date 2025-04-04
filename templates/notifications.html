@@ -105,6 +105,32 @@
         font-size: 3rem;
         margin-bottom: 1rem;
     }
+    
+    /* 响应式设计 - 移动端适配 */
+    @media (max-width: 767.98px) {
+        .notification-sidebar {
+            width: 70px;
+        }
+        
+        .notification-nav-item {
+            padding: 12px 10px;
+            justify-content: center;
+        }
+        
+        .notification-nav-text {
+            display: none;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+        }
+        
+        .notification-nav-item i {
+            font-size: 1.2rem;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -116,15 +142,15 @@
         <div class="notification-sidebar">
             <ul class="notification-nav">
                 <li class="notification-nav-item active" data-target="like-notifications">
-                    <span><i class="bi bi-heart me-2"></i> 我的点赞</span>
+                    <span><i class="bi bi-heart me-2"></i> <span class="notification-nav-text">我的点赞</span></span>
                     <span class="notification-badge like-count">0</span>
                 </li>
                 <li class="notification-nav-item" data-target="reply-notifications">
-                    <span><i class="bi bi-chat-dots me-2"></i> 我的回复</span>
+                    <span><i class="bi bi-chat-dots me-2"></i> <span class="notification-nav-text">我的回复</span></span>
                     <span class="notification-badge reply-count">0</span>
                 </li>
                 <li class="notification-nav-item" data-target="system-notifications">
-                    <span><i class="bi bi-bell me-2"></i> 系统消息</span>
+                    <span><i class="bi bi-bell me-2"></i> <span class="notification-nav-text">系统消息</span></span>
                     <span class="notification-badge system-count">0</span>
                 </li>
             </ul>
