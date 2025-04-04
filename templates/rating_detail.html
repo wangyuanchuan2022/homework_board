@@ -792,28 +792,6 @@
                         </div>
                         {% endfor %}
                     </div>
-                    
-                    {% if recent_ratings %}
-                    <div class="recent-ratings">
-                        <div class="recent-ratings-header">最近评分</div>
-                        {% for user_rating in recent_ratings %}
-                        <div class="recent-rating-item">
-                            <div class="recent-rating-user">
-                                {{ user_rating.user.username }}
-                            </div>
-                            <div class="recent-rating-stars star-rating">
-                                {% for i in "12345" %}
-                                {% if forloop.counter <= user_rating.score %}
-                                <i class="fas fa-star"></i>
-                                {% else %}
-                                <i class="far fa-star"></i>
-                                {% endif %}
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>

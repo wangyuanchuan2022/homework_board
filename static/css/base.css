@@ -149,6 +149,15 @@ body.no-bg-selected {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
+/* 移动端导航栏下拉菜单增强 */
+.navbar-toggler {
+    padding: 4px 4px;
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.9%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
 /* 卡片样式 */
 .card {
     background-color: var(--card-bg);
@@ -620,4 +629,36 @@ body.no-bg-selected {
     font-size: 10px;
     position: relative;
     top: -1px;
+}
+
+@media (max-width: 991.98px) {
+    .dropdown-menu {
+        background-color: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .dropdown {
+        position: static;
+    }
+    
+    /* 确保在移动设备上下拉菜单显示在视窗内 */
+    .dropdown-menu {
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    /* 增加下拉菜单项的间距和大小，使其更易于点击 */
+    .dropdown-item {
+        padding: 12px 20px;
+        font-size: 1.05rem;
+    }
+    
+    /* 确保下拉菜单箭头在移动设备上更明显 */
+    .dropdown-toggle::after {
+        border-top: 0.4em solid;
+        border-right: 0.4em solid transparent;
+        border-left: 0.4em solid transparent;
+        vertical-align: middle;
+    }
 }

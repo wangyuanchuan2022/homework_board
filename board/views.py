@@ -24,7 +24,8 @@ import bleach
 
 from .forms import (
     CustomUserCreationForm, CustomAuthenticationForm, AssignmentForm, BatchAssignmentForm,
-    UpdateUsernameForm, ChangePasswordForm, RatingForm, UserRatingForm, RatingCommentForm
+    UpdateUsernameForm, ChangePasswordForm, RatingForm, UserRatingForm, RatingCommentForm,
+    HotTopicForm
 )
 from .models import (
     User, Subject, Assignment, CompletionRecord, HotTopic, HotTopicLike, Comment, 
@@ -1203,24 +1204,34 @@ def hot_topics_view(request):
 def create_hot_topic(request):
     """创建热搜"""
     if request.method == 'POST':
-        title = request.POST.get('title', '').strip()
-        content = request.POST.get('content', '').strip()
-        is_anonymous = request.POST.get('is_anonymous') == 'true'
+        form = HotTopicForm(request.POST)
+        if form.is_valid():
+            hot_topic = form.save(commit=False)
+            hot_topic.author = request.user
+            hot_topic.save()
+            return redirect('hot_topics')
+        # 如果是AJAX请求的旧版表单提交
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            title = request.POST.get('title', '').strip()
+            content = request.POST.get('content', '').strip()
+            is_anonymous = request.POST.get('is_anonymous') == 'true'
 
-        if not title:
-            return JsonResponse({'success': False, 'message': '标题不能为空'})
+            if not title:
+                return JsonResponse({'success': False, 'message': '标题不能为空'})
 
-        # 创建热搜
-        HotTopic.objects.create(
-            title=title,
-            content=content,
-            author=request.user,
-            is_anonymous=is_anonymous
-        )
+            # 创建热搜
+            HotTopic.objects.create(
+                title=title,
+                content=content,
+                author=request.user,
+                is_anonymous=is_anonymous
+            )
 
-        return JsonResponse({'success': True})
+            return JsonResponse({'success': True})
+    else:
+        form = HotTopicForm()
 
-    return JsonResponse({'success': False, 'message': '请求方法错误'})
+    return render(request, 'create_hot_topic.html', {'form': form})
 
 
 @user_type_required(['student', 'admin'])

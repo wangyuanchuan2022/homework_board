@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.core.exceptions import ValidationError
 
-from .models import User, Assignment, Subject, Rating, UserRating, RatingComment
+from .models import User, Assignment, Subject, Rating, UserRating, RatingComment, HotTopic
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -313,3 +313,31 @@ class RatingCommentForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['content'].widget.attrs.update({'class': 'form-control'})
+
+class HotTopicForm(forms.ModelForm):
+    """热搜表单"""
+    title = forms.CharField(
+        label="标题",
+        max_length=200,
+        required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '输入热搜标题'}),
+    )
+    content = forms.CharField(
+        label="内容",
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 8,
+            'placeholder': '输入热搜详细内容，支持Markdown语法和LaTeX公式',
+        }),
+    )
+    is_anonymous = forms.BooleanField(
+        label="匿名发布",
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        initial=False,
+    )
+
+    class Meta:
+        model = HotTopic
+        fields = ['title', 'content', 'is_anonymous']

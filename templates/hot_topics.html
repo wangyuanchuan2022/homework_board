@@ -227,6 +227,19 @@
         color: #dc3545;
         font-size: 0.85rem;
     }
+    
+    /* 热搜卡片高度样式 */
+    .topic-card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .topic-card .card-body {
+        flex-grow: 1;
+        overflow: auto;
+        max-height: 1000px;
+    }
 </style>
 {% endblock %}
 
@@ -236,49 +249,23 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <h2 class="mb-0"><i class="bi bi-fire text-danger me-2"></i>十班热搜</h2>
-                <a href="{% url 'dashboard' %}" class="btn btn-primary">
-                    <i class="bi bi-arrow-left me-1"></i>返回仪表盘
-                </a>
+                <div>
+                    <a href="{% url 'create_hot_topic' %}" class="btn btn-danger me-2">
+                        <i class="bi bi-plus-circle me-1"></i>创建热搜
+                    </a>
+                    <a href="{% url 'dashboard' %}" class="btn btn-primary">
+                        <i class="bi bi-arrow-left me-1"></i>返回仪表盘
+                    </a>
+                </div>
             </div>
             <p class="text-muted">实时热搜，看看大家都在讨论什么</p>
         </div>
     </div>
     
-    <div class="row mb-4">
-        <div class="col-md-8 col-lg-7 col-xl-6 mx-auto">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 text-white">发布热搜</h5>
-                </div>
-                <div class="card-body">
-                    <form id="createTopicForm">
-                        <div class="mb-3">
-                            <label for="topicTitle" class="form-label">标题</label>
-                            <input type="text" class="form-control" id="topicTitle" name="title" required maxlength="200" placeholder="输入热搜标题">
-                        </div>
-                        <div class="mb-3">
-                            <label for="topicContent" class="form-label">内容 (可选)</label>
-                            <textarea class="form-control" id="topicContent" name="content" rows="3" placeholder="输入热搜详细内容"></textarea>
-                        </div>
-                        <div class="mb-3 form-check">
-                            <input class="form-check-input" id="isAnonymous" name="is_anonymous" type="checkbox">
-                            <label class="form-check-label" for="isAnonymous">匿名发布</label>
-                            <small class="form-text text-muted d-block">选择匿名后，其他用户将看不到您是谁</small>
-                        </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-danger">
-                                <i class="bi bi-plus-circle me-1"></i>发布热搜
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    
     <div class="row">
-        <div class="col-md-8 col-lg-7 col-xl-6 mx-auto">
-            <div class="card">
+        <!-- 热搜TOP10部分 -->
+        <div class="col-md-6 mb-4">
+            <div class="card topic-card">
                 <div class="card-header">
                     <h5 class="mb-0 text-white">十班热搜 TOP 10</h5>
                 </div>
@@ -387,12 +374,10 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- 最近热搜部分 -->
-    <div class="row mt-4">
-        <div class="col-md-8 col-lg-7 col-xl-6 mx-auto">
-            <div class="card">
+        <!-- 最近热搜部分 -->
+        <div class="col-md-6 mb-4">
+            <div class="card topic-card">
                 <div class="card-header">
                     <h5 class="mb-0 text-white">最近热搜</h5>
                 </div>
