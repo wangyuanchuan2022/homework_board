@@ -294,6 +294,11 @@ body.no-bg-selected {
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
 }
 
+/* 鼠标悬停时显示下拉菜单 */
+.dropdown:hover .dropdown-menu {
+    display: block;
+}
+
 /* 下拉菜单 */
 .dropdown-menu {
     background-color: var(--card-bg-hover);

@@ -52,6 +52,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "board.middleware.SecurityHeadersMiddleware",
     "board.middleware.XSSProtectionMiddleware",
+    "board.middleware.UserActivityMiddleware",
 ]
 
 ROOT_URLCONF = "homework_board.urls"

@@ -5,6 +5,7 @@
         <tr>
             <th>用户名</th>
             <th>注册时间</th>
+            <th>状态</th>
             <th>作业数量</th>
             <th>操作</th>
         </tr>
@@ -21,6 +22,13 @@
                 </div>
             </td>
             <td>{{ teacher.date_joined|date:"Y-m-d H:i" }}</td>
+            <td>
+                {% if teacher.is_online %}
+                <span class="badge bg-success">在线</span>
+                {% else %}
+                <span class="badge bg-secondary">离线</span>
+                {% endif %}
+            </td>
             <td><span class="badge assignment-count">{{ teacher.assignments.count }}</span></td>
             <td>
                 <button class="btn btn-sm btn-danger btn-icon delete-user" data-id="{{ teacher.id }}">
@@ -30,7 +38,7 @@
         </tr>
         {% empty %}
         <tr>
-            <td class="text-center empty-data" colspan="4">
+            <td class="text-center empty-data" colspan="5">
                 <div class="empty-icon-container mb-2">
                     <i class="bi bi-person-slash"></i>
                 </div>

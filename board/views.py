@@ -1719,12 +1719,13 @@ def create_comment(request):
 
 @user_type_required(['student', 'admin'])
 def toggle_comment_like(request):
-    """点赞/取消点赞评论"""
+    """点赞/取消点赞热搜评论"""
     if request.method == 'POST':
         comment_id = request.POST.get('comment_id')
 
         try:
             comment = Comment.objects.get(id=comment_id)
+            content = comment.content
 
             # 检查用户是否已点赞
             like_exists = CommentLike.objects.filter(comment=comment, user=request.user).exists()
@@ -1743,7 +1744,8 @@ def toggle_comment_like(request):
                 # 创建点赞通知（排除给自己的点赞，但包括匿名评论）
                 if comment.author != request.user:
                     sender_name = "匿名用户" if request.user.is_anonymous or (hasattr(request, 'is_anonymous_view') and request.is_anonymous_view) else request.user.username
-                    notification_content = f"{sender_name} 点赞了你的评论"
+                    safe_content = content[:50] + '...' if len(content) > 50 else content
+                    notification_content = f"{sender_name}点赞了你的评论\"{safe_content}\""
                     
                     Notification.objects.create(
                         recipient=comment.author,
@@ -2500,7 +2502,8 @@ def comment_rating(request, rating_id):
             # 发送通知给评分作者（如果评论者不是作者自己）
             if rating.author != request.user:
                 sender_name = "匿名用户" if comment.is_anonymous else request.user.username
-                notification_content = f"{sender_name} 评论了你的评分 {rating.title}：\"{comment.content[:50]}\""
+                safe_content = comment.content[:50] + "..." if len(comment.content) > 50 else comment.content
+                notification_content = f"{sender_name} 评论了你的评分 {rating.title}：\"{safe_content}\""
                 
                 Notification.objects.create(
                     recipient=rating.author,
@@ -2540,7 +2543,8 @@ def reply_comment(request, comment_id):
             # 创建通知，通知原评论作者有人回复了评论
             if parent_comment.author != request.user:
                 sender_name = "匿名用户" if is_anonymous else request.user.username
-                notification_content = f"{sender_name} 回复了你的评论：\"{content[:50]}...\""
+                safe_content = content[:50] + "..." if len(content) > 50 else content
+                notification_content = f"{sender_name} 回复了你的评论：\"{safe_content}\""
                 
                 Notification.objects.create(
                     recipient=parent_comment.author,
@@ -2576,7 +2580,8 @@ def like_comment(request, comment_id):
             # 创建通知（如果不是给自己点赞）
             if comment.author != request.user:
                 sender_name = "匿名用户" if comment.is_anonymous else request.user.username
-                notification_content = f"{sender_name} 点赞了你的评论：\"{comment.content[:50]}...\""
+                safe_content = comment.content[:50] + "..." if len(comment.content) > 50 else comment.content
+                notification_content = f"{sender_name} 点赞了你的评论：\"{safe_content}\""
                 
                 Notification.objects.create(
                     recipient=comment.author,
@@ -2618,8 +2623,7 @@ def delete_rating(request, rating_id):
     # 检查权限：只有评分作者或管理员可以删除
     if request.user == rating.author or request.user.user_type == 'admin':
         # 标记为不活跃而不是直接删除，保留历史数据
-        rating.is_active = False
-        rating.save()
+        rating.delete()
         messages.success(request, '评分项目已删除')
         return redirect('ratings')
     else:

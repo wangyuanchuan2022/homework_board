@@ -19,11 +19,19 @@ class User(AbstractUser):
     avatar = models.URLField(blank=True, null=True)
     student_id = models.CharField(max_length=10, blank=True, null=True, verbose_name='学号')
     hidden_subjects = models.ManyToManyField('Subject', blank=True, related_name='hidden_by_users')
+    last_activity = models.DateTimeField(blank=True, null=True, verbose_name='最后活动时间')
 
     def __str__(self):
         if self.user_type == 'student' and self.student_id:
             return f"{self.username} ({self.student_id})"
         return f"{self.username} ({self.get_user_type_display()})"
+
+    @property
+    def is_online(self):
+        """判断用户是否在线，最后活动时间在3分钟内则视为在线"""
+        if not self.last_activity:
+            return False
+        return (timezone.now() - self.last_activity).total_seconds() < 180  # 3分钟
 
 
 class Subject(models.Model):

@@ -4,3 +4,5 @@
 /staticfiles
 /download_fontawesome.sh
 /download_katex_fonts.sh
+/.coverage
+/.cursor/rules/djangoprojects.mdc
