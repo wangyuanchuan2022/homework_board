@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-&7@79pizk#f&jdo1*y#r(g%xy%%n4%i)u#j*+67#n19xl$z)fn"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -50,8 +50,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "board.middleware.SecurityHeadersMiddleware",
-    "board.middleware.XSSProtectionMiddleware",
     "board.middleware.UserActivityMiddleware",
 ]
 
@@ -135,17 +133,3 @@ AUTH_USER_MODEL = 'board.User'
 LOGIN_URL = 'login'  # 使用主登录页面
 LOGIN_REDIRECT_URL = 'dashboard'  # 登录成功后重定向到仪表盘
 LOGOUT_REDIRECT_URL = 'login'  # 登出后重定向到登录页面
-
-# 安全设置
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'
-
-# Cookie安全设置 - 生产环境下使用
-if not DEBUG:
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_SSL_REDIRECT = True
-    SECURE_HSTS_SECONDS = 31536000  # 1年
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
